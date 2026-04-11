@@ -1,4 +1,4 @@
-package az.cargora.cargora.entity.PackageHistory;
+package az.cargora.cargora.entity;
 
 public enum PackageStatus {
     DECLARED,
