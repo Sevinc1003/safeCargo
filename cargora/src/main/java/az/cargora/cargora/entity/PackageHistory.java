@@ -1,4 +1,4 @@
-package az.cargora.cargora.entity.PackageHistory;
+package az.cargora.cargora.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -16,8 +16,10 @@ public class PackageHistory {
     private Long id;
 
 
-    //Package claasi yaradilsin, ondan sonra burda one2many qurmaliyiq(bu class FK dasiyacaq),
-    //ve package classinda inverse side etse ela olar.
+    @ManyToOne
+    @JoinColumn(name = "package_id")
+    private Package relatedPackage;
+
 
 
     @Enumerated(EnumType.STRING)
@@ -28,14 +30,12 @@ public class PackageHistory {
     private LocalDateTime timestamp;
 
 
-
     public PackageHistory() {
     }
 
-    public PackageHistory(PackageStatus status,LocalDateTime timestamp){
+    public PackageHistory(PackageStatus status, LocalDateTime timestamp) {
         this.status = status;
         this.timestamp = timestamp;
-
     }
 
 }

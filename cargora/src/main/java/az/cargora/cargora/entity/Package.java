@@ -50,6 +50,6 @@ public class Package {
         this.createdAt = LocalDateTime.now();
     }
 
-    @OneToMany(mappedBy = "aPackage", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "relatedPackage", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PackageHistory> history;
 }
