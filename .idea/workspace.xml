@@ -5,8 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a7648967-6bc8-4f2b-b4d6-fb48a7477978" name="Changes" comment="useless directory is deleted">
-      <change afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/repository/PackageRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/repository/PickUpPointRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/entity/Package.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/entity/Package.java" afterDir="false" />
     </list>
@@ -16,7 +15,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="18" />
+    <option name="cachedIndexableFilesCount" value="20" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -41,7 +40,7 @@
     </favorite-branches>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="main" />
+        <entry key="$PROJECT_DIR$" value="Ruzi-dev" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
