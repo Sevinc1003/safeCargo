@@ -1,6 +1,7 @@
 package az.cargora.cargora.entity;
 
-import az.cargora.cargora.entity.PackageHistory.PackageHistory;
+
+import az.cargora.cargora.entity.PackageHistory;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -50,6 +51,7 @@ public class Package {
         this.createdAt = LocalDateTime.now();
     }
 
+    @Column
     @OneToMany(mappedBy = "relatedPackage", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<PackageHistory> history;
 }
