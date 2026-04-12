@@ -10,4 +10,6 @@ public class CargoraApplication {
 		SpringApplication.run(CargoraApplication.class, args);
 	}
 
+
+
 }

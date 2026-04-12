@@ -1,35 +1,37 @@
 package az.cargora.cargora.entity;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
-import org.hibernate.annotations.ManyToAny;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.Digits;
-
 @Entity
 @Table(name = "balances")
-public class Balance {
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 
+public class Balance {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @MapsId
-    @JoinColumn(name = "user_id")
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id" , nullable = false, unique = true)
     private User user;
 
-    private BigDecimal inAzn;
-    private BigDecimal inUsd;
+    @Column(nullable = false, precision = 19, scale = 4)
+    private BigDecimal amount;
 
-    @Digits(integer = 8, fraction = 2)
-    @Column(precision = 10, scale = 2)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Currency currency;
+
+    @Column(precision = 19, scale = 4)
     private BigDecimal bonus;
+
+
 }
