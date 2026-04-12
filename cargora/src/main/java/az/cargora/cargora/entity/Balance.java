@@ -13,9 +13,13 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Digits;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "balances")
+@Getter
+@Setter
 public class Balance {
 
     @Id
@@ -26,10 +30,10 @@ public class Balance {
     @JoinColumn(name = "user_id")
     private User user;
 
-    private BigDecimal inAzn;
-    private BigDecimal inUsd;
+    private BigDecimal balance;
 
-    @Digits(integer = 8, fraction = 2)
-    @Column(precision = 10, scale = 2)
+    //yuzdeliye nece cedvelde yuvarlaq gosterim bilmirem. arasdirib duzelderem
+    // @Digits(integer = 8, fraction = 2)
+    // @Column(precision = 10, scale = 2)
     private BigDecimal bonus;
 }
