@@ -30,12 +30,11 @@ public class PackageHistory {
     private LocalDateTime timestamp;
 
 
-    public PackageHistory() {
-    }
-
-    public PackageHistory(PackageStatus status, LocalDateTime timestamp) {
+    public PackageHistory(Package pkg, PackageStatus status) {
+        
+        this.timestamp = LocalDateTime.now();
+        this.relatedPackage = pkg;
         this.status = status;
-        this.timestamp = timestamp;
     }
 
 }
