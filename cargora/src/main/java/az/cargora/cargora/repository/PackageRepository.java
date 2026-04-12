@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface PackageRepository extends JpaRepository<Package,Long> {
 
-    List<Package> findByUser_UserId(Long userId);
+    List<Package> findByUserId(Long userId);
 
 
     Optional<Package> findByTrackingNumber(String trackingNumber);

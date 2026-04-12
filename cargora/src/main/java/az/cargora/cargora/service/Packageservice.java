@@ -18,8 +18,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PackageService {
 
+   private static final BigDecimal PRICE_PER_KG = BigDecimal.valueOf(5);
+
     private final PackageRepository packageRepository;
-    private final PackageHistoryRepository packageHistoryRepository;
+
+    private final PackageHistoryService packageHistory;
+
 
     @Transactional
     public Package createPackage(Package pkg) {
@@ -27,13 +31,13 @@ public class PackageService {
         pkg.setShippingFee(BigDecimal.ZERO);
 
         Package saved = packageRepository.save(pkg);
-        addHistory(saved, PackageStatus.DECLARED);
+        packageHistory.newStatus(saved, PackageStatus.DECLARED);
         return saved;
     }
 
     @Transactional(readOnly = true)
     public List<Package> getUserPackages(Long userId) {
-        return packageRepository.findByUser_UserId(userId);
+        return packageRepository.findByUserId(userId);
     }
 
     @Transactional
@@ -41,18 +45,16 @@ public class PackageService {
         Package pkg = getById(packageId);
         pkg.setWeight(weight);
         pkg.setShippingFee(calculateShippingFee(weight));
+        
         return packageRepository.save(pkg);
     }
-    private void addHistory(Package pkg, PackageStatus status) {
-        PackageHistory entry = new PackageHistory(status, LocalDateTime.now());
-        entry.setRelatedPackage(pkg);
-        packageHistoryRepository.save(entry);
-    }
+
+
     private BigDecimal calculateShippingFee(BigDecimal weight) {
         if (weight == null) {
             return BigDecimal.ZERO;
         }
-        return weight.multiply(BigDecimal.valueOf(5));
+        return weight.multiply(PRICE_PER_KG);
     }
 
     private String generateInternalCode() {
