@@ -1,5 +1,6 @@
 package az.cargora.cargora.entity;
 
+import az.cargora.cargora.entity.PackageHistory.PackageHistory;
 import jakarta.persistence.*;
 import lombok.*;
 
