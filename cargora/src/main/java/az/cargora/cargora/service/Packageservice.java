@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class Packageservice {
+public class PackageService {
 
     private final PackageRepository packageRepository;
     private final PackageHistoryRepository packageHistoryRepository;
