@@ -1,37 +1,39 @@
 package az.cargora.cargora.entity;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.math.BigDecimal;
+
+import org.hibernate.annotations.ManyToAny;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Digits;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "balances")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-
 public class Balance {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id" , nullable = false, unique = true)
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(nullable = false, precision = 19, scale = 4)
-    private BigDecimal amount;
+    private BigDecimal balance;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Currency currency;
-
-    @Column(precision = 19, scale = 4)
+    //yuzdeliye nece cedvelde yuvarlaq gosterim bilmirem. arasdirib duzelderem
+    // @Digits(integer = 8, fraction = 2)
+    // @Column(precision = 10, scale = 2)
     private BigDecimal bonus;
-
-
 }
