@@ -37,7 +37,7 @@ public class PackageService {
 
     @Transactional(readOnly = true)
     public List<Package> getUserPackages(Long userId) {
-        return packageRepository.findByUserId(userId);
+        return packageRepository.findByUserUserId(userId);
     }
 
     @Transactional
