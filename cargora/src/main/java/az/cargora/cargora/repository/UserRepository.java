@@ -12,4 +12,7 @@ public interface UserRepository extends JpaRepository<User, Long>{
 
     Optional<User> findByPIN(String PIN);
 
+     //   Optional<Balance> findByUser(Long userId);
+
+
 }

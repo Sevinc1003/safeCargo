@@ -1,5 +1,6 @@
 package az.cargora.cargora.entity;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -39,6 +40,10 @@ public class User {
     private PickUpPoint pickUpAdress;
 
     private String homeAddress;
+
+    private BigDecimal balance;
+
+    private BigDecimal bonus;
 
     @OneToMany(mappedBy = "user")
     @JsonIgnore
