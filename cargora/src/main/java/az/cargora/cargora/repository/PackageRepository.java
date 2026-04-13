@@ -11,7 +11,8 @@ import java.util.Optional;
 @Repository
 public interface PackageRepository extends JpaRepository<Package,Long> {
 
-    List<Package> findByUser_UserId(Long userId);
+    //bu query gedib useer cedvelinden melumati cekir
+    List<Package> findByUserUserId(Long userId);
 
 
     Optional<Package> findByTrackingNumber(String trackingNumber);
