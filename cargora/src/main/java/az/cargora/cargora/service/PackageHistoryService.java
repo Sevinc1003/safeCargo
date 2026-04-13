@@ -1,5 +1,7 @@
 package az.cargora.cargora.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import az.cargora.cargora.entity.PackageHistory;
@@ -20,5 +22,9 @@ public class PackageHistoryService {
         repo.save(new PackageHistory(pkg, status));
 
     }
+
+    public List<PackageHistory> getPackageHistory(Long packageId) {
+    return repo.findByRelatedPackage_Id(packageId);
+}
 
 }

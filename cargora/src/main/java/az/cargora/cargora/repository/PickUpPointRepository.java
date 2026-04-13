@@ -9,7 +9,7 @@ import java.util.Optional;
 @Repository
 public interface PickUpPointRepository extends JpaRepository<PickUpPoint, Long> {
 
-    List<PickUpPoint> findByPickUpPointId(Long id);
+    Optional<PickUpPoint> findById(Long id);
 
     Optional<PickUpPoint> findByAddress(String address);
 }

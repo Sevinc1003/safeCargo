@@ -34,7 +34,7 @@ public class BalanceService {
         if (stripeResponse.isSuccess()) {
 
             Balance balance = balanceRepository
-                    .findByUserId(request.getUserId())
+                    .findByUser(request.getUserId())
                     .orElseThrow(() -> new RuntimeException("Balance not found"));
 
             balance.setBalance(
