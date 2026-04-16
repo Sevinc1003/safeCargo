@@ -1,0 +1,45 @@
+Index: cargora/src/main/java/az/cargora/cargora/controller/PackageController.java
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java b/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java
+new file mode 100644
+--- /dev/null	(date 1776372105333)
++++ b/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java	(date 1776372105333)
+@@ -0,0 +1,38 @@
++package az.cargora.cargora.controller;
++
++
++import az.cargora.cargora.entity.Package;
++import az.cargora.cargora.service.PackageService;
++import lombok.RequiredArgsConstructor;
++import org.springframework.http.ResponseEntity;
++import org.springframework.web.bind.annotation.GetMapping;
++import org.springframework.web.bind.annotation.PathVariable;
++import org.springframework.web.bind.annotation.PostMapping;
++import org.springframework.web.bind.annotation.RequestBody;
++import org.springframework.web.bind.annotation.RestController;
++
++import java.util.List;
++
++@RestController
++@RequiredArgsConstructor
++public class PackageController {
++    private final PackageService packageService;
++
++    @PostMapping("/packages")
++    public ResponseEntity<Package> createPackage(@RequestBody Package pkg) {
++        Package createdPackage = packageService.createPackage(pkg);
++        return ResponseEntity.ok(createdPackage);
++    }
++
++    @GetMapping("/packages/{id}")
++    public ResponseEntity<Package> getPackage(@PathVariable Long id) {
++        Package pkg = packageService.getPackageById(id);
++        return ResponseEntity.ok(pkg);
++    }
++
++    @GetMapping("/users/{userId}/packages")
++    public ResponseEntity<List<Package>> getAllPackages(@PathVariable Long userId) {
++        List<Package> packages = packageService.getUserPackages(userId);
++        return ResponseEntity.ok(packages);
++    }
++}
