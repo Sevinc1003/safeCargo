@@ -6,8 +6,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import az.cargora.cargora.entity.PackageHistory;
-import az.cargora.cargora.entity.PackageStatus;
 import az.cargora.cargora.entity.User;
+import az.cargora.cargora.enums.PackageStatus;
 import az.cargora.cargora.repository.PackageHistoryRepository;
 import lombok.RequiredArgsConstructor;
 

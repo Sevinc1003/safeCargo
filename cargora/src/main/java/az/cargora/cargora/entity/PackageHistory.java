@@ -6,6 +6,8 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+import az.cargora.cargora.enums.PackageStatus;
+
 @Entity
 @Table(name = "package_history")
 @Getter
