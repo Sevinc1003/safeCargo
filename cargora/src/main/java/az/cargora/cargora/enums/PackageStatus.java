@@ -1,4 +1,4 @@
-package az.cargora.cargora.entity;
+package az.cargora.cargora.enums;
 
 public enum PackageStatus {
     DECLARED,
