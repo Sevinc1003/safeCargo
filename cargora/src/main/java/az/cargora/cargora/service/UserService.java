@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import az.cargora.cargora.dto.TopUpRequest;
+import az.cargora.cargora.dto.request.TopUpRequest;
 import az.cargora.cargora.entity.PickUpPoint;
 import az.cargora.cargora.entity.User;
 import az.cargora.cargora.payment.FakeStripeService;

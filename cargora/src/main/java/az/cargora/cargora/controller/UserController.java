@@ -3,7 +3,7 @@ package az.cargora.cargora.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import az.cargora.cargora.dto.TopUpRequest;
+import az.cargora.cargora.dto.request.TopUpRequest;
 import az.cargora.cargora.entity.User;
 import az.cargora.cargora.service.UserService;
 import lombok.RequiredArgsConstructor;
