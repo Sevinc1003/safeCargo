@@ -1,15 +1,12 @@
 package az.cargora.cargora.service;
 
 import az.cargora.cargora.entity.Package;
-import az.cargora.cargora.entity.PackageStatus;
 import az.cargora.cargora.entity.PickUpPoint;
+import az.cargora.cargora.enums.PackageStatus; 
 import az.cargora.cargora.repository.PackageRepository;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import az.cargora.cargora.entity.PackageStatus;
-import az.cargora.cargora.entity.PackageHistory;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -43,7 +40,6 @@ public class PackageService {
     public Package getPackageById(Long packageId) {
         return getById(packageId);
     }
-
     @Transactional
     public Package updateWeight(Long packageId, BigDecimal weight) {
         if (weight == null || weight.compareTo(BigDecimal.ZERO) <= 0) {
@@ -62,7 +58,8 @@ public class PackageService {
         pkg.setDestinationBranch(destinationBranch);
         return packageRepository.save(pkg);
     }
-    @Transactional
+
+    @Transactional 
     private BigDecimal calculateShippingFee(BigDecimal weight) {
         if (weight == null) {
             return BigDecimal.ZERO;
@@ -70,11 +67,11 @@ public class PackageService {
         return weight.multiply(PRICE_PER_KG);
     }
 
-    private  String generateInternalCode() {
+    private String generateInternalCode() {
         return "EXP-" + UUID.randomUUID().toString().substring(0, 8);
     }
 
-    private  Package getById(Long id) {
+    private Package getById(Long id) {
         return packageRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Package not found"));
     }

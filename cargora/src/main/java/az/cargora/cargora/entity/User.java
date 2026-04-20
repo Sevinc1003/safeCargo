@@ -15,6 +15,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -28,6 +29,11 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
+
+    @Column(unique = true, nullable = false)
+    @Email
+    private String email;
+
 
     @Column(unique = true, nullable = false)
     private String PIN;
@@ -49,6 +55,13 @@ public class User {
     @JsonIgnore
     private List<Package> packages;
 
+    public User(@Email String email, String PIN) {
+        this.email = email;
+        this.PIN = PIN;
+    }
+
+
+    
 
 
 }
