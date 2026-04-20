@@ -37,7 +37,7 @@ public class Account  {
     @Enumerated(EnumType.STRING)
     private UserRole role;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     private User user;
 

@@ -56,23 +56,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Disable CSRF for REST API testing
                 .csrf(csrf -> csrf.disable())
-
-                // Enable HTTP Basic authentication for now
                 .httpBasic(Customizer.withDefaults())
-
-                // Configure endpoint access rules
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints - no authentication required
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
 
-                        // Admin-only endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
-
-                        // All other endpoints require authentication
-                        .anyRequest().authenticated());
+                );
 
         return http.build();
     }

@@ -64,11 +64,16 @@ public class AccountService {
 
         String token = generateToken(account);
 
-
         return createResponse(token, account);
     }
 
-//---------------------------------------------------------------------------------
+    public Long getUserIdByUsername(String username) {
+        return accountRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Account not found"))
+                .getUser().getUserId();
+    }
+
+    // ---------------------------------------------------------------------------------
 
     private String generateToken(Account account) {
         String token = jwtTokenProvider.generateToken(
@@ -79,7 +84,7 @@ public class AccountService {
 
     }
 
-    private AuthResponse createResponse(String token, Account account){
+    private AuthResponse createResponse(String token, Account account) {
 
         AuthResponse response = new AuthResponse();
         response.setToken(token);

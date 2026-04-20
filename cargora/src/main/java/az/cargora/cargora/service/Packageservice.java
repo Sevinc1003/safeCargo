@@ -1,9 +1,13 @@
 package az.cargora.cargora.service;
 
+import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.entity.Package;
 import az.cargora.cargora.entity.PickUpPoint;
-import az.cargora.cargora.enums.PackageStatus; 
+import az.cargora.cargora.entity.User;
+import az.cargora.cargora.enums.PackageStatus;
 import az.cargora.cargora.repository.PackageRepository;
+import az.cargora.cargora.repository.PickUpPointRepository;
+import az.cargora.cargora.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,16 +24,30 @@ public class PackageService {
 
     private final PackageRepository packageRepository;
     private final PackageHistoryService packageHistory;
+    private final UserRepository userRepository;
+    private final PickUpPointRepository pickUpPointRepository;
 
     @Transactional
-    public Package createPackage(Package pkg) {
-        pkg.setInternalTrackingCode(generateInternalCode());
-        pkg.setShippingFee(BigDecimal.ZERO);
+    public void createPackage(newPackageRequest request) {
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Package saved = packageRepository.save(pkg);
-        packageHistory.newStatus(saved, PackageStatus.DECLARED);
-        return saved;
+        PickUpPoint branch = pickUpPointRepository.findById(request.getDestinationBranchId())
+                .orElseThrow(() -> new RuntimeException("Branch not found"));
+
+        Package pkg = new Package();
+
+        pkg.setUser(user);
+        pkg.setDestinationBranch(branch);
+        pkg.setTrackingNumber(request.getTrackingNumber());
+        pkg.setWeight(request.getWeight()); 
+        pkg.setShippingFee(BigDecimal.ZERO);
+        pkg.setInternalTrackingCode(generateInternalTrackingCode());
+
+        packageRepository.save(pkg);
     }
+
+    
 
     @Transactional(readOnly = true)
     public List<Package> getUserPackages(Long userId) {
@@ -40,6 +58,7 @@ public class PackageService {
     public Package getPackageById(Long packageId) {
         return getById(packageId);
     }
+
     @Transactional
     public Package updateWeight(Long packageId, BigDecimal weight) {
         if (weight == null || weight.compareTo(BigDecimal.ZERO) <= 0) {
@@ -59,7 +78,9 @@ public class PackageService {
         return packageRepository.save(pkg);
     }
 
-    @Transactional 
+    
+//----------------------------------------
+    @Transactional
     private BigDecimal calculateShippingFee(BigDecimal weight) {
         if (weight == null) {
             return BigDecimal.ZERO;
@@ -67,7 +88,7 @@ public class PackageService {
         return weight.multiply(PRICE_PER_KG);
     }
 
-    private String generateInternalCode() {
+    private String generateInternalTrackingCode() {
         return "EXP-" + UUID.randomUUID().toString().substring(0, 8);
     }
 
