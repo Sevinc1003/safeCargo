@@ -67,6 +67,10 @@ public class PackageService {
         return weight.multiply(PRICE_PER_KG);
     }
 
+    private Package getByStatus( status){
+
+    }
+
     private String generateInternalCode() {
         return "EXP-" + UUID.randomUUID().toString().substring(0, 8);
     }
