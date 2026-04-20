@@ -3,13 +3,12 @@ package az.cargora.cargora.controller;
 
 import az.cargora.cargora.entity.Package;
 import az.cargora.cargora.entity.PickUpPoint;
+import az.cargora.cargora.enums.PackageStatus;
 import az.cargora.cargora.service.PackageService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 
-
-import az.cargora.cargora.entity.PackageHistory;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -35,6 +34,12 @@ public class PackageController {
     @GetMapping("/users/{userId}/packages")
     public ResponseEntity<List<Package>> getAllPackages(@PathVariable Long userId) {
         List<Package> packages = packageService.getUserPackages(userId);
+        return ResponseEntity.ok(packages);
+    }
+
+    @GetMapping("/packages/status/{status}")
+    public ResponseEntity<List<Package>> getPackagesByStatus(@PathVariable PackageStatus status) {
+        List<Package> packages = packageService.getPackagesByStatus(status);
         return ResponseEntity.ok(packages);
     }
 
