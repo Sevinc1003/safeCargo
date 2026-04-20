@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 
+
+import az.cargora.cargora.entity.PackageHistory;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -41,7 +43,6 @@ public class PackageController {
         Package updatedPackage = packageService.updateWeight(id, weight);
         return ResponseEntity.ok(updatedPackage);
     }
-
     @PatchMapping("package/{id}/destiantionBracnh")
     public ResponseEntity<Package> UpdateDestinationBranch(@PathVariable Long id,@RequestBody PickUpPoint destiantionBranch) {
         Package updatePackage = packageService.updatePickUpPoints(id,destiantionBranch);
