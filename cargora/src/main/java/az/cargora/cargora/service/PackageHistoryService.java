@@ -20,20 +20,20 @@ public class PackageHistoryService {
 
     private final BigDecimal DELIVERY_BONUS = new BigDecimal(2.5);
 
-    public void newStatus(az.cargora.cargora.entity.Package pkg, PackageStatus status) {
+    public void newStatus(az.cargora.cargora.entity.Package pkg, PackageStatus newStatus) {
 
-        if (status == PackageStatus.DELIVERED) {
+        if (newStatus == PackageStatus.DELIVERED) {
 
             User user = pkg.getUser();
 
-            BigDecimal bonus = user.getBonus();
+            BigDecimal updatedBonus = user.getBonus().add(DELIVERY_BONUS);
             
-            userService.updateBonus(user.getUserId(), user.getBonus().add(DELIVERY_BONUS));
+            userService.updateBonus(user.getUserId(), updatedBonus);
             
         }
 
        
-        repo.save(new PackageHistory(pkg, status));
+        repo.save(new PackageHistory(pkg, newStatus));
 
     }
 

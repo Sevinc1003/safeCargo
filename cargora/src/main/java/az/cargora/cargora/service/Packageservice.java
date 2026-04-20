@@ -1,7 +1,8 @@
 package az.cargora.cargora.service;
 
 import az.cargora.cargora.entity.Package;
-import az.cargora.cargora.enums.PackageStatus;
+import az.cargora.cargora.entity.PickUpPoint;
+import az.cargora.cargora.enums.PackageStatus; 
 import az.cargora.cargora.repository.PackageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,15 +40,26 @@ public class PackageService {
     public Package getPackageById(Long packageId) {
         return getById(packageId);
     }
-
     @Transactional
     public Package updateWeight(Long packageId, BigDecimal weight) {
+        if (weight == null || weight.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Weight must be greater than zero");
+        }
+
         Package pkg = getById(packageId);
         pkg.setWeight(weight);
         pkg.setShippingFee(calculateShippingFee(weight));
         return packageRepository.save(pkg);
     }
 
+    @Transactional
+    public Package updatePickUpPoints(Long packageId, PickUpPoint destinationBranch) {
+        Package pkg = getById(packageId);
+        pkg.setDestinationBranch(destinationBranch);
+        return packageRepository.save(pkg);
+    }
+
+    @Transactional 
     private BigDecimal calculateShippingFee(BigDecimal weight) {
         if (weight == null) {
             return BigDecimal.ZERO;

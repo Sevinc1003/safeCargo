@@ -16,6 +16,8 @@ import java.util.List;
 public class PackageController {
     private final PackageService packageService;
 
+    //BUNA REQUEST DTO EDERIK. DTO ICINDE VALIDASIYA, 
+    // PARAMETR UCUN @Valid, class ucun @Validated
     @PostMapping("/packages")
     public ResponseEntity<Package> createPackage(@RequestBody Package pkg) {
         Package createdPackage = packageService.createPackage(pkg);
