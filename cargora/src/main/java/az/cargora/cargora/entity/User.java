@@ -17,12 +17,14 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
+@NoArgsConstructor
 public class User {
 
 
@@ -55,10 +57,13 @@ public class User {
     @JsonIgnore
     private List<Package> packages;
 
-    public User(@Email String email, String PIN) {
+    public User(@Email String email, String PIN, Fullname fullname) {
         this.email = email;
         this.PIN = PIN;
+        this.fullname = fullname;
     }
+
+
 
 
     
