@@ -1,0 +1,957 @@
+Index: cargora/src/main/java/az/cargora/cargora/service/UserService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package az.cargora.cargora.service;\r\n\r\nimport java.math.BigDecimal;\r\n\r\nimport org.springframework.stereotype.Service;\r\nimport org.springframework.transaction.annotation.Transactional;\r\n\r\nimport az.cargora.cargora.dto.TopUpRequest;\r\nimport az.cargora.cargora.entity.PickUpPoint;\r\nimport az.cargora.cargora.entity.User;\r\nimport az.cargora.cargora.payment.FakeStripeService;\r\nimport az.cargora.cargora.payment.StripeChargeRequest;\r\nimport az.cargora.cargora.payment.StripeChargeResponse;\r\nimport az.cargora.cargora.repository.UserRepository;\r\nimport lombok.RequiredArgsConstructor;\r\n\r\n@Service\r\n@RequiredArgsConstructor\r\npublic class UserService {\r\n\r\n    private final UserRepository userRepository;\r\n\r\n    private final FakeStripeService fakeStripeService;\r\n\r\n    public User createUser(User user) {\r\n        return userRepository.save(user);\r\n    }\r\n\r\n    public User getUserById(Long userId) {\r\n        return userRepository.findById(userId)\r\n                .orElseThrow(() -> new RuntimeException(\"User not found\"));\r\n    }\r\n\r\n    public User getUserByPin(String pin) {\r\n        return userRepository.findByPIN(pin)\r\n                .orElseThrow(() -> new RuntimeException(\"User not found\"));\r\n    }\r\n\r\n    public void updatePickupPoint(Long userId, PickUpPoint point) {\r\n\r\n        User user = getUserById(userId);\r\n\r\n        user.setPickUpAdress(point);\r\n\r\n        userRepository.save(user);\r\n    }\r\n\r\n    public void updateHomeAddress(Long userId, String address) {\r\n\r\n        User user = getUserById(userId);\r\n\r\n        user.setHomeAddress(address);\r\n\r\n        userRepository.save(user);\r\n    }\r\n\r\n\r\n\r\n    @Transactional\r\n    public void topUpBalance(TopUpRequest request) {\r\n\r\n        // 1. Stripe request\r\n        StripeChargeRequest stripeRequest = new StripeChargeRequest(request.getCardNumber(), \r\n                                                                    request.getCvv(), \r\n                                                                    request.getAmount(), \r\n                                                                    \"AZN\");\r\n\r\n\r\n\r\n        // 2. Payment\r\n        StripeChargeResponse stripeResponse = fakeStripeService.charge(stripeRequest);\r\n\r\n        // 3. if successed\r\n        if (stripeResponse.isSuccess()) {\r\n\r\n            User user = userRepository\r\n                    .findById(request.getUserId())\r\n                    .orElseThrow(() -> new RuntimeException(\"User not found\"));\r\n\r\n            user.setBalance(\r\n                    user.getBalance().add(request.getAmount()));\r\n\r\n\r\n        } else {\r\n            throw new RuntimeException(stripeResponse.getMessage());\r\n        }\r\n    }\r\n\r\n\r\n    //--------------------------------------------------------------\r\n\r\n\r\n    public void updateBonus(long userId, BigDecimal amount) {\r\n\r\n        User user = userRepository\r\n                .findById(userId)\r\n                .orElseThrow(() -> new RuntimeException(\"User not found\"));\r\n\r\n        user.setBonus(user.getBonus().add(amount));\r\n\r\n    }\r\n\r\n        \r\n\r\n\r\n\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/service/UserService.java b/cargora/src/main/java/az/cargora/cargora/service/UserService.java
+--- a/cargora/src/main/java/az/cargora/cargora/service/UserService.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/cargora/src/main/java/az/cargora/cargora/service/UserService.java	(date 1776690210558)
+@@ -5,7 +5,7 @@
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
+ 
+-import az.cargora.cargora.dto.TopUpRequest;
++import az.cargora.cargora.dto.request.TopUpRequest;
+ import az.cargora.cargora.entity.PickUpPoint;
+ import az.cargora.cargora.entity.User;
+ import az.cargora.cargora.payment.FakeStripeService;
+Index: cargora/src/main/java/az/cargora/cargora/service/Packageservice.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package az.cargora.cargora.service;\r\n\r\nimport az.cargora.cargora.entity.Package;\r\nimport az.cargora.cargora.enums.PackageStatus;\r\nimport az.cargora.cargora.repository.PackageRepository;\r\nimport lombok.RequiredArgsConstructor;\r\nimport org.springframework.stereotype.Service;\r\nimport org.springframework.transaction.annotation.Transactional;\r\n\r\nimport java.math.BigDecimal;\r\nimport java.util.List;\r\nimport java.util.UUID;\r\n\r\n@Service\r\n@RequiredArgsConstructor\r\npublic class PackageService {\r\n\r\n    private static final BigDecimal PRICE_PER_KG = BigDecimal.valueOf(5);\r\n\r\n    private final PackageRepository packageRepository;\r\n    private final PackageHistoryService packageHistory;\r\n\r\n    @Transactional\r\n    public Package createPackage(Package pkg) {\r\n        pkg.setInternalTrackingCode(generateInternalCode());\r\n        pkg.setShippingFee(BigDecimal.ZERO);\r\n\r\n        Package saved = packageRepository.save(pkg);\r\n        packageHistory.newStatus(saved, PackageStatus.DECLARED);\r\n        return saved;\r\n    }\r\n\r\n    @Transactional(readOnly = true)\r\n    public List<Package> getUserPackages(Long userId) {\r\n        return packageRepository.findByUserUserId(userId);\r\n    }\r\n\r\n    @Transactional(readOnly = true)\r\n    public Package getPackageById(Long packageId) {\r\n        return getById(packageId);\r\n    }\r\n\r\n    @Transactional\r\n    public Package updateWeight(Long packageId, BigDecimal weight) {\r\n        Package pkg = getById(packageId);\r\n        pkg.setWeight(weight);\r\n        pkg.setShippingFee(calculateShippingFee(weight));\r\n        return packageRepository.save(pkg);\r\n    }\r\n\r\n    private BigDecimal calculateShippingFee(BigDecimal weight) {\r\n        if (weight == null) {\r\n            return BigDecimal.ZERO;\r\n        }\r\n        return weight.multiply(PRICE_PER_KG);\r\n    }\r\n\r\n    private String generateInternalCode() {\r\n        return \"EXP-\" + UUID.randomUUID().toString().substring(0, 8);\r\n    }\r\n\r\n    private Package getById(Long id) {\r\n        return packageRepository.findById(id)\r\n                .orElseThrow(() -> new RuntimeException(\"Package not found\"));\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java b/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java
+--- a/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java	(date 1776690222720)
+@@ -1,7 +1,8 @@
+ package az.cargora.cargora.service;
+ 
+ import az.cargora.cargora.entity.Package;
+-import az.cargora.cargora.enums.PackageStatus;
++import az.cargora.cargora.entity.PickUpPoint;
++import az.cargora.cargora.enums.PackageStatus; 
+ import az.cargora.cargora.repository.PackageRepository;
+ import lombok.RequiredArgsConstructor;
+ import org.springframework.stereotype.Service;
+@@ -39,15 +40,26 @@
+     public Package getPackageById(Long packageId) {
+         return getById(packageId);
+     }
+-
+     @Transactional
+     public Package updateWeight(Long packageId, BigDecimal weight) {
++        if (weight == null || weight.compareTo(BigDecimal.ZERO) <= 0) {
++            throw new IllegalArgumentException("Weight must be greater than zero");
++        }
++
+         Package pkg = getById(packageId);
+         pkg.setWeight(weight);
+         pkg.setShippingFee(calculateShippingFee(weight));
+         return packageRepository.save(pkg);
+     }
+ 
++    @Transactional
++    public Package updatePickUpPoints(Long packageId, PickUpPoint destinationBranch) {
++        Package pkg = getById(packageId);
++        pkg.setDestinationBranch(destinationBranch);
++        return packageRepository.save(pkg);
++    }
++
++    @Transactional 
+     private BigDecimal calculateShippingFee(BigDecimal weight) {
+         if (weight == null) {
+             return BigDecimal.ZERO;
+@@ -63,4 +75,4 @@
+         return packageRepository.findById(id)
+                 .orElseThrow(() -> new RuntimeException("Package not found"));
+     }
+-}
++}
+\ No newline at end of file
+Index: cargora/src/main/java/az/cargora/cargora/service/PackageHistoryService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package az.cargora.cargora.service;\r\n\r\nimport java.math.BigDecimal;\r\nimport java.util.List;\r\n\r\nimport org.springframework.stereotype.Service;\r\n\r\nimport az.cargora.cargora.entity.PackageHistory;\r\nimport az.cargora.cargora.entity.User;\r\nimport az.cargora.cargora.enums.PackageStatus;\r\nimport az.cargora.cargora.repository.PackageHistoryRepository;\r\nimport lombok.RequiredArgsConstructor;\r\n\r\n@Service\r\n@RequiredArgsConstructor\r\npublic class PackageHistoryService {\r\n\r\n    private final PackageHistoryRepository repo;\r\n    private final UserService userService;\r\n\r\n    private final BigDecimal DELIVERY_BONUS = new BigDecimal(2.5);\r\n\r\n    public void newStatus(az.cargora.cargora.entity.Package pkg, PackageStatus status) {\r\n\r\n        if (status == PackageStatus.DELIVERED) {\r\n\r\n            User user = pkg.getUser();\r\n\r\n            BigDecimal bonus = user.getBonus();\r\n            \r\n            userService.updateBonus(user.getUserId(), user.getBonus().add(DELIVERY_BONUS));\r\n            \r\n        }\r\n\r\n       \r\n        repo.save(new PackageHistory(pkg, status));\r\n\r\n    }\r\n\r\n    public List<PackageHistory> getPackageHistory(Long packageId) {\r\n    return repo.findByRelatedPackage_Id(packageId);\r\n}\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/service/PackageHistoryService.java b/cargora/src/main/java/az/cargora/cargora/service/PackageHistoryService.java
+--- a/cargora/src/main/java/az/cargora/cargora/service/PackageHistoryService.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/cargora/src/main/java/az/cargora/cargora/service/PackageHistoryService.java	(date 1776690210557)
+@@ -20,20 +20,20 @@
+ 
+     private final BigDecimal DELIVERY_BONUS = new BigDecimal(2.5);
+ 
+-    public void newStatus(az.cargora.cargora.entity.Package pkg, PackageStatus status) {
++    public void newStatus(az.cargora.cargora.entity.Package pkg, PackageStatus newStatus) {
+ 
+-        if (status == PackageStatus.DELIVERED) {
++        if (newStatus == PackageStatus.DELIVERED) {
+ 
+             User user = pkg.getUser();
+ 
+-            BigDecimal bonus = user.getBonus();
++            BigDecimal updatedBonus = user.getBonus().add(DELIVERY_BONUS);
+             
+-            userService.updateBonus(user.getUserId(), user.getBonus().add(DELIVERY_BONUS));
++            userService.updateBonus(user.getUserId(), updatedBonus);
+             
+         }
+ 
+        
+-        repo.save(new PackageHistory(pkg, status));
++        repo.save(new PackageHistory(pkg, newStatus));
+ 
+     }
+ 
+Index: cargora/src/main/java/az/cargora/cargora/controller/PackageController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package az.cargora.cargora.controller;\r\n\r\n\r\nimport az.cargora.cargora.entity.Package;\r\nimport az.cargora.cargora.entity.PickUpPoint;\r\nimport az.cargora.cargora.service.PackageService;\r\nimport org.springframework.http.ResponseEntity;\r\nimport org.springframework.web.bind.annotation.*;\r\nimport lombok.RequiredArgsConstructor;\r\n\r\nimport java.math.BigDecimal;\r\nimport java.util.List;\r\n\r\n@RestController\r\n@RequiredArgsConstructor\r\npublic class PackageController {\r\n    private final PackageService packageService;\r\n\r\n    @PostMapping(\"/packages\")\r\n    public ResponseEntity<Package> createPackage(@RequestBody Package pkg) {\r\n        Package createdPackage = packageService.createPackage(pkg);\r\n        return ResponseEntity.ok(createdPackage);\r\n    }\r\n\r\n    @GetMapping(\"/packages/{id}\")\r\n    public ResponseEntity<Package> getPackage(@PathVariable Long id) {\r\n        Package foundPackage = packageService.getPackageById(id);\r\n        return ResponseEntity.ok(foundPackage);\r\n    }\r\n\r\n    @GetMapping(\"/users/{userId}/packages\")\r\n    public ResponseEntity<List<Package>> getAllPackages(@PathVariable Long userId) {\r\n        List<Package> packages = packageService.getUserPackages(userId);\r\n        return ResponseEntity.ok(packages);\r\n    }\r\n\r\n    @PatchMapping(\"package/{id}/weight\")\r\n    public ResponseEntity<Package> UpdateWeight(@PathVariable Long id,@RequestBody BigDecimal weight) {\r\n        Package updatedPackage = packageService.updateWeight(id, weight);\r\n        return ResponseEntity.ok(updatedPackage);\r\n    }\r\n\r\n    @PatchMapping(\"package/{id}/destiantionBracnh\")\r\n    public ResponseEntity<Package> UpdateDestinationBranch(@PathVariable Long id,@RequestBody PickUpPoint destiantionBranch) {\r\n        Package updatePackage = packageService.updatePickUpPoints(id,destiantionBranch);\r\n        return ResponseEntity.ok(updatePackage);\r\n    }\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java b/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java
+--- a/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java	(date 1776690339149)
+@@ -16,6 +16,8 @@
+ public class PackageController {
+     private final PackageService packageService;
+ 
++    //BUNA REQUEST DTO EDERIK. DTO ICINDE VALIDASIYA, 
++    // PARAMETR UCUN @Valid, class ucun @Validated
+     @PostMapping("/packages")
+     public ResponseEntity<Package> createPackage(@RequestBody Package pkg) {
+         Package createdPackage = packageService.createPackage(pkg);
+Index: cargora/pom.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n\txsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\r\n\t<modelVersion>4.0.0</modelVersion>\r\n\t<parent>\r\n\t\t<groupId>org.springframework.boot</groupId>\r\n\t\t<artifactId>spring-boot-starter-parent</artifactId>\r\n\t\t<version>4.0.5</version>\r\n\t\t<relativePath/> <!-- lookup parent from repository -->\r\n\t</parent>\r\n\t<groupId>az.cargora</groupId>\r\n\t<artifactId>cargora</artifactId>\r\n\t<version>0.0.1-SNAPSHOT</version>\r\n\t<name>cargora</name>\r\n\t<description/>\r\n\t<url/>\r\n\t<licenses>\r\n\t\t<license/>\r\n\t</licenses>\r\n\t<developers>\r\n\t\t<developer/>\r\n\t</developers>\r\n\t<scm>\r\n\t\t<connection/>\r\n\t\t<developerConnection/>\r\n\t\t<tag/>\r\n\t\t<url/>\r\n\t</scm>\r\n\t<properties>\r\n\t\t<java.version>21</java.version>\r\n\r\n\t\t\t<maven.compiler.source>21</maven.compiler.source>\r\n\t\t\t<maven.compiler.target>21</maven.compiler.target>\r\n\r\n\t</properties>\r\n\t<dependencies>\r\n\t\t<dependency>\r\n\t\t\t<groupId>org.springframework.boot</groupId>\r\n\t\t\t<artifactId>spring-boot-starter-data-jpa</artifactId>\r\n\t\t</dependency>\r\n\t\t<dependency>\r\n\t\t\t<groupId>org.springframework.boot</groupId>\r\n\t\t\t<artifactId>spring-boot-starter-validation</artifactId>\r\n\t\t</dependency>\r\n\t\t<dependency>\r\n\t\t\t<groupId>org.springframework.boot</groupId>\r\n\t\t\t<artifactId>spring-boot-starter-webmvc</artifactId>\r\n\t\t</dependency>\r\n\r\n\t\t<dependency>\r\n\t\t\t<groupId>com.mysql</groupId>\r\n\t\t\t<artifactId>mysql-connector-j</artifactId>\r\n\t\t\t<scope>runtime</scope>\r\n\t\t</dependency>\r\n\t\t<dependency>\r\n\t\t\t<groupId>org.springframework.boot</groupId>\r\n\t\t\t<artifactId>spring-boot-starter-data-jpa-test</artifactId>\r\n\t\t\t<scope>test</scope>\r\n\t\t</dependency>\r\n\t\t<dependency>\r\n\t\t\t<groupId>org.springframework.boot</groupId>\r\n\t\t\t<artifactId>spring-boot-starter-validation-test</artifactId>\r\n\t\t\t<scope>test</scope>\r\n\t\t</dependency>\r\n\t\t<dependency>\r\n\t\t\t<groupId>org.springframework.boot</groupId>\r\n\t\t\t<artifactId>spring-boot-starter-webmvc-test</artifactId>\r\n\t\t\t<scope>test</scope>\r\n\t\t</dependency>\r\n\t\t<dependency>\r\n    \t\t<groupId>org.springframework.boot</groupId>\r\n    \t\t<artifactId>spring-boot-starter-security</artifactId>\r\n\t\t</dependency>\r\n\t\t        <dependency>\r\n            <groupId>org.projectlombok</groupId>\r\n            <artifactId>lombok</artifactId>\r\n            <optional>true</optional>\r\n        </dependency>\r\n\t</dependencies>\r\n\r\n\t<build>\r\n\t\t<plugins>\r\n\t\t\t<plugin>\r\n\t\t\t\t<groupId>org.springframework.boot</groupId>\r\n\t\t\t\t<artifactId>spring-boot-maven-plugin</artifactId>\r\n\t\t\t</plugin>\r\n\t\t</plugins>\r\n\t</build>\r\n\r\n</project>\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/pom.xml b/cargora/pom.xml
+--- a/cargora/pom.xml	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/cargora/pom.xml	(date 1776690210549)
+@@ -71,7 +71,12 @@
+     		<groupId>org.springframework.boot</groupId>
+     		<artifactId>spring-boot-starter-security</artifactId>
+ 		</dependency>
+-		        <dependency>
++		<dependency>
++    		<groupId>com.auth0</groupId>
++    		<artifactId>java-jwt</artifactId>
++    		<version>4.4.0</version>
++		</dependency>
++		<dependency>
+             <groupId>org.projectlombok</groupId>
+             <artifactId>lombok</artifactId>
+             <optional>true</optional>
+Index: cargora/src/main/java/az/cargora/cargora/dto/LoginRequest.java
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/dto/LoginRequest.java b/cargora/src/main/java/az/cargora/cargora/dto/LoginRequest.java
+deleted file mode 100644
+--- a/cargora/src/main/java/az/cargora/cargora/dto/LoginRequest.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ /dev/null	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
+@@ -1,11 +0,0 @@
+-package az.cargora.cargora.dto;
+-
+-import lombok.Getter;
+-import lombok.Setter;
+-
+-@Getter
+-@Setter
+-public class LoginRequest {
+-    private String email;
+-    private String password;
+-}
+Index: cargora/src/main/java/az/cargora/cargora/dto/RegisterRequest.java
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/dto/RegisterRequest.java b/cargora/src/main/java/az/cargora/cargora/dto/RegisterRequest.java
+deleted file mode 100644
+--- a/cargora/src/main/java/az/cargora/cargora/dto/RegisterRequest.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ /dev/null	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
+@@ -1,13 +0,0 @@
+-package az.cargora.cargora.dto;
+-
+-import lombok.Getter;
+-import lombok.Setter;
+-
+-@Getter
+-@Setter
+-public class RegisterRequest {
+-    private String email;
+-    private String password;
+-
+-    private String PIN;
+-}
+Index: .idea/shelf/Uncommitted_changes_before_Checkout_at_4_20_2026_2_05_PM_[Changes]/shelved.patch
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_20_2026_2_05_PM_[Changes]/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_20_2026_2_05_PM_[Changes]/shelved.patch
+new file mode 100644
+--- /dev/null	(date 1776679538726)
++++ b/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_20_2026_2_05_PM_[Changes]/shelved.patch	(date 1776679538726)
+@@ -0,0 +1,89 @@
++Index: cargora/src/main/java/az/cargora/cargora/service/Packageservice.java
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+>package az.cargora.cargora.service;\r\n\r\nimport az.cargora.cargora.entity.Package;\r\nimport az.cargora.cargora.enums.PackageStatus;\r\nimport az.cargora.cargora.repository.PackageRepository;\r\nimport lombok.RequiredArgsConstructor;\r\nimport org.springframework.stereotype.Service;\r\nimport org.springframework.transaction.annotation.Transactional;\r\n\r\nimport java.math.BigDecimal;\r\nimport java.util.List;\r\nimport java.util.UUID;\r\n\r\n@Service\r\n@RequiredArgsConstructor\r\npublic class PackageService {\r\n\r\n    private static final BigDecimal PRICE_PER_KG = BigDecimal.valueOf(5);\r\n\r\n    private final PackageRepository packageRepository;\r\n    private final PackageHistoryService packageHistory;\r\n\r\n    @Transactional\r\n    public Package createPackage(Package pkg) {\r\n        pkg.setInternalTrackingCode(generateInternalCode());\r\n        pkg.setShippingFee(BigDecimal.ZERO);\r\n\r\n        Package saved = packageRepository.save(pkg);\r\n        packageHistory.newStatus(saved, PackageStatus.DECLARED);\r\n        return saved;\r\n    }\r\n\r\n    @Transactional(readOnly = true)\r\n    public List<Package> getUserPackages(Long userId) {\r\n        return packageRepository.findByUserUserId(userId);\r\n    }\r\n\r\n    @Transactional(readOnly = true)\r\n    public Package getPackageById(Long packageId) {\r\n        return getById(packageId);\r\n    }\r\n\r\n    @Transactional\r\n    public Package updateWeight(Long packageId, BigDecimal weight) {\r\n        Package pkg = getById(packageId);\r\n        pkg.setWeight(weight);\r\n        pkg.setShippingFee(calculateShippingFee(weight));\r\n        return packageRepository.save(pkg);\r\n    }\r\n\r\n    private BigDecimal calculateShippingFee(BigDecimal weight) {\r\n        if (weight == null) {\r\n            return BigDecimal.ZERO;\r\n        }\r\n        return weight.multiply(PRICE_PER_KG);\r\n    }\r\n\r\n    private String generateInternalCode() {\r\n        return \"EXP-\" + UUID.randomUUID().toString().substring(0, 8);\r\n    }\r\n\r\n    private Package getById(Long id) {\r\n        return packageRepository.findById(id)\r\n                .orElseThrow(() -> new RuntimeException(\"Package not found\"));\r\n    }\r\n}\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java b/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java
++--- a/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
+++++ b/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java	(date 1776678223620)
++@@ -1,6 +1,6 @@
++ package az.cargora.cargora.service;
++ 
++-import az.cargora.cargora.entity.Package;
+++import az.cargora.cargora.entity.Package
++ import az.cargora.cargora.enums.PackageStatus;
++ import az.cargora.cargora.repository.PackageRepository;
++ import lombok.RequiredArgsConstructor;
++@@ -59,6 +59,7 @@
++         return "EXP-" + UUID.randomUUID().toString().substring(0, 8);
++     }
++ 
+++
++     private Package getById(Long id) {
++         return packageRepository.findById(id)
++                 .orElseThrow(() -> new RuntimeException("Package not found"));
++Index: cargora/src/main/java/az/cargora/cargora/controller/PackageController.java
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+>package az.cargora.cargora.controller;\r\n\r\n\r\nimport az.cargora.cargora.entity.Package;\r\nimport az.cargora.cargora.entity.PickUpPoint;\r\nimport az.cargora.cargora.service.PackageService;\r\nimport org.springframework.http.ResponseEntity;\r\nimport org.springframework.web.bind.annotation.*;\r\nimport lombok.RequiredArgsConstructor;\r\n\r\nimport java.math.BigDecimal;\r\nimport java.util.List;\r\n\r\n@RestController\r\n@RequiredArgsConstructor\r\npublic class PackageController {\r\n    private final PackageService packageService;\r\n\r\n    @PostMapping(\"/packages\")\r\n    public ResponseEntity<Package> createPackage(@RequestBody Package pkg) {\r\n        Package createdPackage = packageService.createPackage(pkg);\r\n        return ResponseEntity.ok(createdPackage);\r\n    }\r\n\r\n    @GetMapping(\"/packages/{id}\")\r\n    public ResponseEntity<Package> getPackage(@PathVariable Long id) {\r\n        Package foundPackage = packageService.getPackageById(id);\r\n        return ResponseEntity.ok(foundPackage);\r\n    }\r\n\r\n    @GetMapping(\"/users/{userId}/packages\")\r\n    public ResponseEntity<List<Package>> getAllPackages(@PathVariable Long userId) {\r\n        List<Package> packages = packageService.getUserPackages(userId);\r\n        return ResponseEntity.ok(packages);\r\n    }\r\n\r\n    @PatchMapping(\"package/{id}/weight\")\r\n    public ResponseEntity<Package> UpdateWeight(@PathVariable Long id,@RequestBody BigDecimal weight) {\r\n        Package updatedPackage = packageService.updateWeight(id, weight);\r\n        return ResponseEntity.ok(updatedPackage);\r\n    }\r\n\r\n    @PatchMapping(\"package/{id}/destiantionBracnh\")\r\n    public ResponseEntity<Package> UpdateDestinationBranch(@PathVariable Long id,@RequestBody PickUpPoint destiantionBranch) {\r\n        Package updatePackage = packageService.updatePickUpPoints(id,destiantionBranch);\r\n        return ResponseEntity.ok(updatePackage);\r\n    }\r\n\r\n}\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java b/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java
++--- a/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
+++++ b/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java	(date 1776678150659)
++@@ -41,8 +41,8 @@
++     }
++ 
++     @PatchMapping("package/{id}/destiantionBracnh")
++-    public ResponseEntity<Package> UpdateDestinationBranch(@PathVariable Long id,@RequestBody PickUpPoint destiantionBranch) {
++-        Package updatePackage = packageService.updatePickUpPoints(id,destiantionBranch);
+++    public ResponseEntity<Package> UpdatePickUpPoints(@PathVariable Long id,@RequestBody PickUpPoint destinationBranch) {
+++        Package updatePackage = packageService.updatePickUpPoints(id,destinationBranch);
++         return ResponseEntity.ok(updatePackage);
++     }
++ 
++Index: .idea/workspace.xml
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"a7648967-6bc8-4f2b-b4d6-fb48a7477978\" name=\"Changes\" comment=\"useless directory is deleted\">\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/misc.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/misc.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_10_2026_3_04_PM_[Changes]1/shelved.patch\" beforeDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_10_2026_3_04_PM__Changes_1.xml\" beforeDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_rebase_[Changes]/shelved.patch\" beforeDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_rebase__Changes_.xml\" beforeDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/cargora/pom.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/cargora/pom.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"EmbeddingIndexingInfo\">\r\n    <option name=\"cachedIndexableFilesCount\" value=\"29\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Class\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <favorite-branches>\r\n      <branch-storage>\r\n        <map>\r\n          <entry type=\"LOCAL\">\r\n            <value>\r\n              <list>\r\n                <branch-info repo=\"$PROJECT_DIR$\" source=\"Ruzi\" />\r\n              </list>\r\n            </value>\r\n          </entry>\r\n        </map>\r\n      </branch-storage>\r\n    </favorite-branches>\r\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\r\n      <map>\r\n        <entry key=\"$PROJECT_DIR$\" value=\"Ruzi-dev\" />\r\n      </map>\r\n    </option>\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"GitHubPullRequestSearchHistory\">{\r\n  &quot;lastFilter&quot;: {\r\n    &quot;state&quot;: &quot;OPEN&quot;,\r\n    &quot;assignee&quot;: &quot;vRUZIx&quot;\r\n  }\r\n}</component>\r\n  <component name=\"GithubPullRequestsUISettings\">{\r\n  &quot;selectedUrlAndAccountId&quot;: {\r\n    &quot;url&quot;: &quot;https://github.com/Sevinc1003/safeCargo&quot;,\r\n    &quot;accountId&quot;: &quot;17c193a2-6918-48bb-bc99-7e1877626150&quot;\r\n  }\r\n}</component>\r\n  <component name=\"MavenImportPreferences\">\r\n    <option name=\"generalSettings\">\r\n      <MavenGeneralSettings>\r\n        <option name=\"mavenHomeTypeForPersistence\" value=\"WRAPPER\" />\r\n      </MavenGeneralSettings>\r\n    </option>\r\n  </component>\r\n  <component name=\"McpProjectServerCommands\">\r\n    <commands />\r\n    <urls />\r\n  </component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 7\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"3CACu3cDJ0qsrbBBYxJKxMLshch\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\">{\r\n  &quot;keyToString&quot;: {\r\n    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,\r\n    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,\r\n    &quot;Spring Boot.CargoraApplication.executor&quot;: &quot;Run&quot;,\r\n    &quot;git-widget-placeholder&quot;: &quot;Ruzi-dev&quot;,\r\n    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,\r\n    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,\r\n    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,\r\n    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;\r\n  }\r\n}</component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.30387.90\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"a7648967-6bc8-4f2b-b4d6-fb48a7477978\" name=\"Changes\" comment=\"\" />\r\n      <created>1775819208061</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1775819208061</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00001\" summary=\"useless directory is deleted\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1775820686725</created>\r\n      <option name=\"number\" value=\"00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1775820686725</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"2\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"Vcs.Log.Tabs.Properties\">\r\n    <option name=\"TAB_STATES\">\r\n      <map>\r\n        <entry key=\"MAIN\">\r\n          <value>\r\n            <State />\r\n          </value>\r\n        </entry>\r\n      </map>\r\n    </option>\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <MESSAGE value=\"useless directory is deleted\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"useless directory is deleted\" />\r\n  </component>\r\n</project>
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/.idea/workspace.xml b/.idea/workspace.xml
++--- a/.idea/workspace.xml	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
+++++ b/.idea/workspace.xml	(date 1776678323545)
++@@ -5,13 +5,7 @@
++   </component>
++   <component name="ChangeListManager">
++     <list default="true" id="a7648967-6bc8-4f2b-b4d6-fb48a7477978" name="Changes" comment="useless directory is deleted">
++-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
++-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_10_2026_3_04_PM_[Changes]1/shelved.patch" beforeDir="false" />
++-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_10_2026_3_04_PM__Changes_1.xml" beforeDir="false" />
++-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_rebase_[Changes]/shelved.patch" beforeDir="false" />
++-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_rebase__Changes_.xml" beforeDir="false" />
++       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++-      <change beforePath="$PROJECT_DIR$/cargora/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/pom.xml" afterDir="false" />
++       <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java" afterDir="false" />
++       <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java" afterDir="false" />
++     </list>
++@@ -21,7 +15,7 @@
++     <option name="LAST_RESOLUTION" value="IGNORE" />
++   </component>
++   <component name="EmbeddingIndexingInfo">
++-    <option name="cachedIndexableFilesCount" value="29" />
+++    <option name="cachedIndexableFilesCount" value="37" />
++   </component>
++   <component name="FileTemplateManagerImpl">
++     <option name="RECENT_TEMPLATES">
++@@ -91,7 +85,7 @@
++     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
++     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
++     &quot;Spring Boot.CargoraApplication.executor&quot;: &quot;Run&quot;,
++-    &quot;git-widget-placeholder&quot;: &quot;Ruzi-dev&quot;,
+++    &quot;git-widget-placeholder&quot;: &quot;#18 on Ruzi-dev&quot;,
++     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
++     &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
++     &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+Index: cargora/src/main/java/az/cargora/cargora/controller/UserController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package az.cargora.cargora.controller;\r\n\r\nimport org.springframework.http.ResponseEntity;\r\nimport org.springframework.web.bind.annotation.*;\r\n\r\nimport az.cargora.cargora.dto.TopUpRequest;\r\nimport az.cargora.cargora.entity.User;\r\nimport az.cargora.cargora.service.UserService;\r\nimport lombok.RequiredArgsConstructor;\r\n\r\n@RestController\r\n@RequestMapping(\"user\")\r\n@RequiredArgsConstructor\r\npublic class UserController {\r\n\r\n\r\n    private final UserService userService;\r\n\r\n    @PatchMapping(\"/top-up\")\r\n    public ResponseEntity<User> topUpBalance(@RequestBody TopUpRequest request) {\r\n\r\n        userService.topUpBalance(request);\r\n\r\n        // updated user-u geri qaytarmaq üçün\r\n        User user = userService.getUserById(request.getUserId());\r\n\r\n        return ResponseEntity.ok(user);\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/controller/UserController.java b/cargora/src/main/java/az/cargora/cargora/controller/UserController.java
+--- a/cargora/src/main/java/az/cargora/cargora/controller/UserController.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/cargora/src/main/java/az/cargora/cargora/controller/UserController.java	(date 1776690210551)
+@@ -3,7 +3,7 @@
+ import org.springframework.http.ResponseEntity;
+ import org.springframework.web.bind.annotation.*;
+ 
+-import az.cargora.cargora.dto.TopUpRequest;
++import az.cargora.cargora.dto.request.TopUpRequest;
+ import az.cargora.cargora.entity.User;
+ import az.cargora.cargora.service.UserService;
+ import lombok.RequiredArgsConstructor;
+Index: .idea/shelf/Uncommitted_changes_before_Checkout_at_4_20_2026_2_05_PM__Changes_.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_20_2026_2_05_PM__Changes_.xml b/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_20_2026_2_05_PM__Changes_.xml
+new file mode 100644
+--- /dev/null	(date 1776679619347)
++++ b/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_20_2026_2_05_PM__Changes_.xml	(date 1776679619347)
+@@ -0,0 +1,4 @@
++<changelist name="Uncommitted_changes_before_Checkout_at_4_20_2026_2_05_PM_[Changes]" date="1776679577052" recycled="true" deleted="true">
++  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_20_2026_2_05_PM_[Changes]/shelved.patch" />
++  <option name="DESCRIPTION" value="Uncommitted changes before Checkout at 4/20/2026 2:05 PM [Changes]" />
++</changelist>
+\ No newline at end of file
+Index: cargora/src/main/java/az/cargora/cargora/entity/User.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package az.cargora.cargora.entity;\r\n\r\nimport java.math.BigDecimal;\r\nimport java.util.List;\r\n\r\nimport com.fasterxml.jackson.annotation.JsonIgnore;\r\n\r\nimport jakarta.persistence.Column;\r\nimport jakarta.persistence.Embedded;\r\nimport jakarta.persistence.Entity;\r\nimport jakarta.persistence.GeneratedValue;\r\nimport jakarta.persistence.GenerationType;\r\nimport jakarta.persistence.Id;\r\nimport jakarta.persistence.JoinColumn;\r\nimport jakarta.persistence.ManyToOne;\r\nimport jakarta.persistence.OneToMany;\r\nimport jakarta.persistence.Table;\r\nimport jakarta.validation.constraints.Email;\r\nimport lombok.Getter;\r\nimport lombok.Setter;\r\n\r\n@Entity\r\n@Table(name = \"users\")\r\n@Getter\r\n@Setter\r\npublic class User {\r\n\r\n\r\n    @Id\r\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\r\n    private Long userId;\r\n\r\n    @Column(unique = true, nullable = false)\r\n    @Email\r\n    private String email;\r\n\r\n\r\n    @Column(unique = true, nullable = false)\r\n    private String PIN;\r\n\r\n    @Embedded\r\n    private Fullname fullname;\r\n\r\n    @ManyToOne\r\n    @JoinColumn(name = \"pickup_point_id\")\r\n    private PickUpPoint pickUpAdress;\r\n\r\n    private String homeAddress;\r\n\r\n    private BigDecimal balance;\r\n\r\n    private BigDecimal bonus;\r\n\r\n    @OneToMany(mappedBy = \"user\")\r\n    @JsonIgnore\r\n    private List<Package> packages;\r\n\r\n    public User(@Email String email, String PIN) {\r\n        this.email = email;\r\n        this.PIN = PIN;\r\n    }\r\n\r\n\r\n    \r\n\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/entity/User.java b/cargora/src/main/java/az/cargora/cargora/entity/User.java
+--- a/cargora/src/main/java/az/cargora/cargora/entity/User.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/cargora/src/main/java/az/cargora/cargora/entity/User.java	(date 1776690210554)
+@@ -17,12 +17,14 @@
+ import jakarta.persistence.Table;
+ import jakarta.validation.constraints.Email;
+ import lombok.Getter;
++import lombok.NoArgsConstructor;
+ import lombok.Setter;
+ 
+ @Entity
+ @Table(name = "users")
+ @Getter
+ @Setter
++@NoArgsConstructor
+ public class User {
+ 
+ 
+@@ -55,10 +57,13 @@
+     @JsonIgnore
+     private List<Package> packages;
+ 
+-    public User(@Email String email, String PIN) {
++    public User(@Email String email, String PIN, Fullname fullname) {
+         this.email = email;
+         this.PIN = PIN;
++        this.fullname = fullname;
+     }
++
++
+ 
+ 
+     
+Index: cargora/src/main/java/az/cargora/cargora/security/JwtTokenProvider.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/security/JwtTokenProvider.java b/cargora/src/main/java/az/cargora/cargora/security/JwtTokenProvider.java
+new file mode 100644
+--- /dev/null	(date 1776690210555)
++++ b/cargora/src/main/java/az/cargora/cargora/security/JwtTokenProvider.java	(date 1776690210555)
+@@ -0,0 +1,58 @@
++package az.cargora.cargora.security;
++
++import com.auth0.jwt.JWT;
++import com.auth0.jwt.algorithms.Algorithm;
++import com.auth0.jwt.exceptions.JWTVerificationException;
++import com.auth0.jwt.interfaces.DecodedJWT;
++import org.springframework.beans.factory.annotation.Value;
++import org.springframework.stereotype.Component;
++import java.time.Instant;
++
++@Component
++public class JwtTokenProvider {
++
++    @Value("${jwt.secret}")
++    private String secret;
++   
++    @Value("${jwt.expiration}")
++    private long expiration; // in milliseconds
++
++
++    public String generateToken(String email, String role) {
++        return JWT.create()
++                .withSubject(email)
++                .withClaim("role", role)
++                .withIssuedAt(Instant.now())
++                .withExpiresAt(Instant.now().plusMillis(expiration))
++                .sign(Algorithm.HMAC256(secret));
++    }
++
++
++    public boolean validateToken(String token) {
++        try {
++            JWT.require(Algorithm.HMAC256(secret))
++                    .build()
++                    .verify(token);
++            return true;
++        } catch (JWTVerificationException e) {
++            return false;
++        }
++    }
++
++
++    public String getEmailFromToken(String token) {
++        DecodedJWT decoded = JWT.require(Algorithm.HMAC256(secret))
++                .build()
++                .verify(token);
++        return decoded.getSubject();
++    }
++
++
++    public String getRoleFromToken(String token) {
++        DecodedJWT decoded = JWT.require(Algorithm.HMAC256(secret))
++                .build()
++                .verify(token);
++        return decoded.getClaim("role").asString();
++    }
++}
++
+Index: cargora/src/main/resources/application.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>spring.application.name=cargora\r\n\r\n# MySQL Connection\r\nspring.datasource.url=jdbc:mysql://localhost:3306/cargora\r\nspring.datasource.username=root\r\nspring.datasource.password=1234\r\nspring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver\r\n\r\n# JPA / Hibernate Settings\r\nspring.jpa.hibernate.ddl-auto=update\r\nspring.jpa.show-sql=true\r\nspring.jpa.properties.hibernate.format_sql=true\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>ISO-8859-1
+===================================================================
+diff --git a/cargora/src/main/resources/application.properties b/cargora/src/main/resources/application.properties
+--- a/cargora/src/main/resources/application.properties	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/cargora/src/main/resources/application.properties	(date 1776690210558)
+@@ -10,3 +10,7 @@
+ spring.jpa.hibernate.ddl-auto=update
+ spring.jpa.show-sql=true
+ spring.jpa.properties.hibernate.format_sql=true
++
++#JWT
++jwt.secret=7526a4fd1ef27ae40c5080b667db1031b907342a19d793a8d74de1b18eb392d7
++jwt.expiration=3600000
+\ No newline at end of file
+Index: cargora/src/main/java/az/cargora/cargora/security/SecurityConfig.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package az.cargora.cargora.security;\r\n\r\nimport org.springframework.context.annotation.Bean;\r\nimport org.springframework.context.annotation.Configuration;\r\nimport org.springframework.http.HttpMethod;\r\nimport org.springframework.security.config.Customizer;\r\nimport org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;\r\nimport org.springframework.security.config.annotation.web.builders.HttpSecurity;\r\nimport org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;\r\nimport org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;\r\nimport org.springframework.security.crypto.password.PasswordEncoder;\r\nimport org.springframework.security.web.SecurityFilterChain;\r\n\r\n\r\n@Configuration\r\n@EnableWebSecurity\r\n@EnableMethodSecurity  // Enables @PreAuthorize annotations\r\npublic class SecurityConfig {\r\n\r\n    @Bean\r\n    public PasswordEncoder passwordEncoder() {\r\n        return new BCryptPasswordEncoder();\r\n    }\r\n\r\n    @Bean\r\n    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {\r\n        http\r\n            // Disable CSRF for REST API testing\r\n            .csrf(csrf -> csrf.disable())\r\n\r\n            // Enable HTTP Basic authentication for now \r\n            .httpBasic(Customizer.withDefaults())\r\n\r\n            // Configure endpoint access rules\r\n            .authorizeHttpRequests(auth -> auth\r\n                // Public endpoints - no authentication required\r\n                .requestMatchers(\"/api/auth/**\").permitAll()\r\n\r\n                // Admin-only endpoints\r\n                .requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\")\r\n                .requestMatchers(HttpMethod.DELETE, \"/api/users/**\").hasRole(\"ADMIN\")\r\n\r\n                // All other endpoints require authentication\r\n                .anyRequest().authenticated()\r\n            );\r\n\r\n        return http.build();\r\n    }\r\n}\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/security/SecurityConfig.java b/cargora/src/main/java/az/cargora/cargora/security/SecurityConfig.java
+--- a/cargora/src/main/java/az/cargora/cargora/security/SecurityConfig.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/cargora/src/main/java/az/cargora/cargora/security/SecurityConfig.java	(date 1776690210555)
+@@ -1,50 +1,79 @@
+ package az.cargora.cargora.security;
+ 
++import javax.sql.DataSource;
++
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.Configuration;
+ import org.springframework.http.HttpMethod;
++import org.springframework.security.authentication.AuthenticationManager;
+ import org.springframework.security.config.Customizer;
++import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+ import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+ import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
++import org.springframework.security.core.userdetails.UserDetailsService;
+ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+ import org.springframework.security.crypto.password.PasswordEncoder;
++import org.springframework.security.provisioning.JdbcUserDetailsManager;
+ import org.springframework.security.web.SecurityFilterChain;
+ 
++import lombok.RequiredArgsConstructor;
+ 
+ @Configuration
+ @EnableWebSecurity
+-@EnableMethodSecurity  // Enables @PreAuthorize annotations
++@EnableMethodSecurity(prePostEnabled = true) // Enables @PreAuthorize annotations
++@RequiredArgsConstructor
+ public class SecurityConfig {
+ 
++    private final DataSource dataSource;
++
+     @Bean
+     public PasswordEncoder passwordEncoder() {
+         return new BCryptPasswordEncoder();
+     }
+ 
++    @Bean
++    public UserDetailsService userDetailsService() {
++        JdbcUserDetailsManager jdbcDao = new JdbcUserDetailsManager(dataSource);
++
++        jdbcDao.setUsersByUsernameQuery(
++                "SELECT username, password, enabled FROM accounts WHERE username = ?");
++
++        // asagidaki query'ni athorities hazir olanda uygunlasdiraram
++        // jdbcDao.setAuthoritiesByUsernameQuery(
++        // "SELECT username, role FROM users WHERE username = ?"
++        // );
++
++        return jdbcDao;
++    }
++
++    @Bean
++    public AuthenticationManager authenticationManager(
++            AuthenticationConfiguration authenticationConfiguration) throws Exception {
++        return authenticationConfiguration.getAuthenticationManager();
++    }
++
+     @Bean
+     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+         http
+-            // Disable CSRF for REST API testing
+-            .csrf(csrf -> csrf.disable())
++                // Disable CSRF for REST API testing
++                .csrf(csrf -> csrf.disable())
+ 
+-            // Enable HTTP Basic authentication for now 
+-            .httpBasic(Customizer.withDefaults())
++                // Enable HTTP Basic authentication for now
++                .httpBasic(Customizer.withDefaults())
+ 
+-            // Configure endpoint access rules
+-            .authorizeHttpRequests(auth -> auth
+-                // Public endpoints - no authentication required
+-                .requestMatchers("/api/auth/**").permitAll()
++                // Configure endpoint access rules
++                .authorizeHttpRequests(auth -> auth
++                        // Public endpoints - no authentication required
++                        .requestMatchers("/api/auth/**").permitAll()
+ 
+-                // Admin-only endpoints
+-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+-                .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
++                        // Admin-only endpoints
++                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
++                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
+ 
+-                // All other endpoints require authentication
+-                .anyRequest().authenticated()
+-            );
++                        // All other endpoints require authentication
++                        .anyRequest().authenticated());
+ 
+         return http.build();
+     }
+ }
+-
+Index: cargora/src/main/java/az/cargora/cargora/dto/TopUpRequest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/dto/TopUpRequest.java b/cargora/src/main/java/az/cargora/cargora/dto/request/TopUpRequest.java
+rename from cargora/src/main/java/az/cargora/cargora/dto/TopUpRequest.java
+rename to cargora/src/main/java/az/cargora/cargora/dto/request/TopUpRequest.java
+--- a/cargora/src/main/java/az/cargora/cargora/dto/TopUpRequest.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/cargora/src/main/java/az/cargora/cargora/dto/request/TopUpRequest.java	(date 1776690210553)
+@@ -1,4 +1,4 @@
+-package az.cargora.cargora.dto;
++package az.cargora.cargora.dto.request;
+ 
+ import java.math.BigDecimal;
+ 
+@@ -13,7 +13,10 @@
+     private Long userId;
+     private BigDecimal amount;
+ 
++    //card number duzgunluyunu yoxlayan annotasiya(custom ederik extra point)
+     private String cardNumber;
++
++    //3 reqemli olmasini yoxlasin
+     private String cvv;
+ }
+ 
+Index: cargora/src/main/java/az/cargora/cargora/dto/response/AuthResponse.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/dto/response/AuthResponse.java b/cargora/src/main/java/az/cargora/cargora/dto/response/AuthResponse.java
+new file mode 100644
+--- /dev/null	(date 1776690210553)
++++ b/cargora/src/main/java/az/cargora/cargora/dto/response/AuthResponse.java	(date 1776690210553)
+@@ -0,0 +1,15 @@
++package az.cargora.cargora.dto.response;
++
++import lombok.Getter;
++import lombok.NoArgsConstructor;
++import lombok.Setter;
++
++@NoArgsConstructor
++@Getter
++@Setter
++public class AuthResponse {
++
++    private String token;
++    private String email;
++    private String role;
++}
+Index: cargora/src/main/java/az/cargora/cargora/dto/request/RegisterRequest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/dto/request/RegisterRequest.java b/cargora/src/main/java/az/cargora/cargora/dto/request/RegisterRequest.java
+new file mode 100644
+--- /dev/null	(date 1776690210552)
++++ b/cargora/src/main/java/az/cargora/cargora/dto/request/RegisterRequest.java	(date 1776690210552)
+@@ -0,0 +1,28 @@
++package az.cargora.cargora.dto.request;
++
++import az.cargora.cargora.entity.Fullname;
++import jakarta.validation.constraints.Email;
++import jakarta.validation.constraints.NotBlank;
++import jakarta.validation.constraints.Size;
++import lombok.Getter;
++import lombok.Setter;
++
++@Getter
++@Setter
++public class RegisterRequest {
++
++    @NotBlank(message = "Email is required")
++    @Email(message = "Invalid email format")
++    private String email;
++ 
++    @NotBlank(message = "Password is required")
++    @Size(min = 6, message = "Password must be at least 6 characters")
++    private String password;
++ 
++    @NotBlank
++    //7simvollu
++    private String PIN;
++
++    @NotBlank
++    private Fullname fullname;
++}
+Index: cargora/src/main/java/az/cargora/cargora/dto/request/LoginRequest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/dto/request/LoginRequest.java b/cargora/src/main/java/az/cargora/cargora/dto/request/LoginRequest.java
+new file mode 100644
+--- /dev/null	(date 1776690210552)
++++ b/cargora/src/main/java/az/cargora/cargora/dto/request/LoginRequest.java	(date 1776690210552)
+@@ -0,0 +1,18 @@
++package az.cargora.cargora.dto.request;
++
++import jakarta.validation.constraints.Email;
++import jakarta.validation.constraints.NotBlank;
++import lombok.Getter;
++import lombok.Setter;
++
++@Getter
++@Setter
++public class LoginRequest {
++
++   @NotBlank(message = "Email is required")
++    @Email(message = "Invalid email format")
++    private String email;
++ 
++    @NotBlank(message = "Password is required")
++    private String password;
++}
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"a7648967-6bc8-4f2b-b4d6-fb48a7477978\" name=\"Changes\" comment=\"useless directory is deleted\">\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/misc.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/misc.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_10_2026_3_04_PM_[Changes]1/shelved.patch\" beforeDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_10_2026_3_04_PM__Changes_1.xml\" beforeDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_rebase_[Changes]/shelved.patch\" beforeDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_rebase__Changes_.xml\" beforeDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/cargora/pom.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/cargora/pom.xml\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java\" afterDir=\"false\" />\r\n      <change beforePath=\"$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"EmbeddingIndexingInfo\">\r\n    <option name=\"cachedIndexableFilesCount\" value=\"29\" />\r\n  </component>\r\n  <component name=\"FileTemplateManagerImpl\">\r\n    <option name=\"RECENT_TEMPLATES\">\r\n      <list>\r\n        <option value=\"Class\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <favorite-branches>\r\n      <branch-storage>\r\n        <map>\r\n          <entry type=\"LOCAL\">\r\n            <value>\r\n              <list>\r\n                <branch-info repo=\"$PROJECT_DIR$\" source=\"Ruzi\" />\r\n              </list>\r\n            </value>\r\n          </entry>\r\n        </map>\r\n      </branch-storage>\r\n    </favorite-branches>\r\n    <option name=\"RECENT_BRANCH_BY_REPOSITORY\">\r\n      <map>\r\n        <entry key=\"$PROJECT_DIR$\" value=\"Ruzi-dev\" />\r\n      </map>\r\n    </option>\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"GitHubPullRequestSearchHistory\">{\r\n  &quot;lastFilter&quot;: {\r\n    &quot;state&quot;: &quot;OPEN&quot;,\r\n    &quot;assignee&quot;: &quot;vRUZIx&quot;\r\n  }\r\n}</component>\r\n  <component name=\"GithubPullRequestsUISettings\">{\r\n  &quot;selectedUrlAndAccountId&quot;: {\r\n    &quot;url&quot;: &quot;https://github.com/Sevinc1003/safeCargo&quot;,\r\n    &quot;accountId&quot;: &quot;17c193a2-6918-48bb-bc99-7e1877626150&quot;\r\n  }\r\n}</component>\r\n  <component name=\"MavenImportPreferences\">\r\n    <option name=\"generalSettings\">\r\n      <MavenGeneralSettings>\r\n        <option name=\"mavenHomeTypeForPersistence\" value=\"WRAPPER\" />\r\n      </MavenGeneralSettings>\r\n    </option>\r\n  </component>\r\n  <component name=\"McpProjectServerCommands\">\r\n    <commands />\r\n    <urls />\r\n  </component>\r\n  <component name=\"ProjectColorInfo\">{\r\n  &quot;associatedIndex&quot;: 7\r\n}</component>\r\n  <component name=\"ProjectId\" id=\"3CACu3cDJ0qsrbBBYxJKxMLshch\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\">{\r\n  &quot;keyToString&quot;: {\r\n    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,\r\n    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,\r\n    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,\r\n    &quot;Spring Boot.CargoraApplication.executor&quot;: &quot;Run&quot;,\r\n    &quot;git-widget-placeholder&quot;: &quot;Ruzi-dev&quot;,\r\n    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,\r\n    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,\r\n    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,\r\n    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;\r\n  }\r\n}</component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.30387.90\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"a7648967-6bc8-4f2b-b4d6-fb48a7477978\" name=\"Changes\" comment=\"\" />\r\n      <created>1775819208061</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1775819208061</updated>\r\n    </task>\r\n    <task id=\"LOCAL-00001\" summary=\"useless directory is deleted\">\r\n      <option name=\"closed\" value=\"true\" />\r\n      <created>1775820686725</created>\r\n      <option name=\"number\" value=\"00001\" />\r\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\r\n      <option name=\"project\" value=\"LOCAL\" />\r\n      <updated>1775820686725</updated>\r\n    </task>\r\n    <option name=\"localTasksCounter\" value=\"2\" />\r\n    <servers />\r\n  </component>\r\n  <component name=\"Vcs.Log.Tabs.Properties\">\r\n    <option name=\"TAB_STATES\">\r\n      <map>\r\n        <entry key=\"MAIN\">\r\n          <value>\r\n            <State />\r\n          </value>\r\n        </entry>\r\n      </map>\r\n    </option>\r\n  </component>\r\n  <component name=\"VcsManagerConfiguration\">\r\n    <MESSAGE value=\"useless directory is deleted\" />\r\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"useless directory is deleted\" />\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/.idea/workspace.xml	(date 1776690339267)
+@@ -5,15 +5,26 @@
+   </component>
+   <component name="ChangeListManager">
+     <list default="true" id="a7648967-6bc8-4f2b-b4d6-fb48a7477978" name="Changes" comment="useless directory is deleted">
+-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_10_2026_3_04_PM_[Changes]1/shelved.patch" beforeDir="false" />
+-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_10_2026_3_04_PM__Changes_1.xml" beforeDir="false" />
+-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_rebase_[Changes]/shelved.patch" beforeDir="false" />
+-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_rebase__Changes_.xml" beforeDir="false" />
+-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_20_2026_2_05_PM_[Changes]/shelved.patch" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_4_20_2026_2_05_PM__Changes_.xml" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/dto/request/LoginRequest.java" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/dto/request/RegisterRequest.java" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/dto/response/AuthResponse.java" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/security/JwtTokenProvider.java" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/cargora/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/pom.xml" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/controller/AuthController.java" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/controller/PackageController.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/controller/UserController.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/controller/UserController.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/dto/LoginRequest.java" beforeDir="false" />
++      <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/dto/RegisterRequest.java" beforeDir="false" />
++      <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/dto/TopUpRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/dto/request/TopUpRequest.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/entity/User.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/security/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/security/SecurityConfig.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/AccountService.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/AccountService.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/PackageHistoryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/PackageHistoryService.java" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/Packageservice.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/java/az/cargora/cargora/service/UserService.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/cargora/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/cargora/src/main/resources/application.properties" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -21,7 +32,7 @@
+     <option name="LAST_RESOLUTION" value="IGNORE" />
+   </component>
+   <component name="EmbeddingIndexingInfo">
+-    <option name="cachedIndexableFilesCount" value="29" />
++    <option name="cachedIndexableFilesCount" value="37" />
+   </component>
+   <component name="FileTemplateManagerImpl">
+     <option name="RECENT_TEMPLATES">
+@@ -46,7 +57,7 @@
+     </favorite-branches>
+     <option name="RECENT_BRANCH_BY_REPOSITORY">
+       <map>
+-        <entry key="$PROJECT_DIR$" value="Ruzi-dev" />
++        <entry key="$PROJECT_DIR$" value="main" />
+       </map>
+     </option>
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+@@ -82,22 +93,22 @@
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent">{
+-  &quot;keyToString&quot;: {
+-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+-    &quot;Spring Boot.CargoraApplication.executor&quot;: &quot;Run&quot;,
+-    &quot;git-widget-placeholder&quot;: &quot;Ruzi-dev&quot;,
+-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+-    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
+-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;
++  <component name="PropertiesComponent"><![CDATA[{
++  "keyToString": {
++    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
++    "ModuleVcsDetector.initialDetectionPerformed": "true",
++    "RunOnceActivity.MCP Project settings loaded": "true",
++    "RunOnceActivity.ShowReadmeOnStart": "true",
++    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
++    "RunOnceActivity.git.unshallow": "true",
++    "Spring Boot.CargoraApplication.executor": "Run",
++    "git-widget-placeholder": "Merging Ruzi-dev",
++    "kotlin-language-version-configured": "true",
++    "project.structure.last.edited": "Project",
++    "project.structure.proportion": "0.15",
++    "project.structure.side.proportion": "0.2"
+   }
+-}</component>
++}]]></component>
+   <component name="SharedIndexes">
+     <attachedChunks>
+       <set>
+Index: cargora/src/main/java/az/cargora/cargora/controller/AuthController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package az.cargora.cargora.controller;\r\n\r\nimport org.springframework.web.bind.annotation.PostMapping;\r\nimport org.springframework.web.bind.annotation.RequestBody;\r\nimport org.springframework.web.bind.annotation.RequestMapping;\r\nimport org.springframework.web.bind.annotation.RestController;\r\n\r\nimport az.cargora.cargora.dto.LoginRequest;\r\nimport az.cargora.cargora.dto.RegisterRequest;\r\nimport az.cargora.cargora.service.AccountService;\r\nimport lombok.RequiredArgsConstructor;\r\n\r\n@RestController\r\n@RequestMapping(\"/auth\")\r\n@RequiredArgsConstructor\r\npublic class AuthController {\r\n\r\n    private final AccountService accountService;\r\n\r\n    @PostMapping(\"/register\")\r\n    public String register(@RequestBody RegisterRequest request) {\r\n        accountService.register(request);\r\n        return \"Registered successfully\";\r\n    }\r\n\r\n    @PostMapping(\"/login\")\r\n    public String login(@RequestBody LoginRequest request) {\r\n        return accountService.login(request);\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/controller/AuthController.java b/cargora/src/main/java/az/cargora/cargora/controller/AuthController.java
+--- a/cargora/src/main/java/az/cargora/cargora/controller/AuthController.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/cargora/src/main/java/az/cargora/cargora/controller/AuthController.java	(date 1776690210550)
+@@ -1,30 +1,45 @@
+ package az.cargora.cargora.controller;
+ 
++import org.springframework.http.HttpStatus;
++import org.springframework.http.ResponseEntity;
++import org.springframework.security.authentication.AuthenticationManager;
++import org.springframework.validation.annotation.Validated;
+ import org.springframework.web.bind.annotation.PostMapping;
+ import org.springframework.web.bind.annotation.RequestBody;
+ import org.springframework.web.bind.annotation.RequestMapping;
+ import org.springframework.web.bind.annotation.RestController;
+ 
+-import az.cargora.cargora.dto.LoginRequest;
+-import az.cargora.cargora.dto.RegisterRequest;
++import az.cargora.cargora.dto.request.LoginRequest;
++import az.cargora.cargora.dto.request.RegisterRequest;
++import az.cargora.cargora.dto.response.AuthResponse;
++import az.cargora.cargora.security.JwtTokenProvider;
+ import az.cargora.cargora.service.AccountService;
++import jakarta.validation.Valid;
+ import lombok.RequiredArgsConstructor;
+ 
+ @RestController
+ @RequestMapping("/auth")
+ @RequiredArgsConstructor
++@Validated
+ public class AuthController {
+ 
+     private final AccountService accountService;
+ 
++
++
+     @PostMapping("/register")
+-    public String register(@RequestBody RegisterRequest request) {
+-        accountService.register(request);
+-        return "Registered successfully";
++    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
++
++        AuthResponse response = accountService.register(request);
++
++        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+     }
+ 
+     @PostMapping("/login")
+-    public String login(@RequestBody LoginRequest request) {
+-        return accountService.login(request);
++    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
++
++        AuthResponse response = accountService.login(request);
++
++        return ResponseEntity.ok(response);
+     }
+ }
+Index: cargora/src/main/java/az/cargora/cargora/service/AccountService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package az.cargora.cargora.service;\r\n\r\nimport org.springframework.stereotype.Service;\r\n\r\nimport az.cargora.cargora.dto.LoginRequest;\r\nimport az.cargora.cargora.dto.RegisterRequest;\r\nimport az.cargora.cargora.entity.Account;\r\nimport az.cargora.cargora.entity.User;\r\nimport az.cargora.cargora.enums.UserRole;\r\nimport az.cargora.cargora.repository.AccountRepository;\r\nimport az.cargora.cargora.repository.UserRepository;\r\nimport lombok.RequiredArgsConstructor;\r\n\r\nimport org.springframework.security.crypto.password.PasswordEncoder;\r\n\r\n@Service\r\n@RequiredArgsConstructor\r\npublic class AccountService {\r\n\r\n    private final AccountRepository accountRepository;\r\n    private final PasswordEncoder passwordEncoder;\r\n\r\n    private final UserRepository userRepo;\r\n\r\n    // REGISTER\r\n    public void register(RegisterRequest request) {\r\n\r\n        if (accountRepository.existsByUsername(request.getEmail())) {\r\n            throw new RuntimeException(\"Email already exists\");\r\n        }\r\n\r\n        Account account = new Account();\r\n        account.setUsername(request.getEmail());\r\n        account.setPassword(passwordEncoder.encode(request.getPassword()));\r\n        account.setEnabled(true);\r\n        account.setRole(UserRole.USER);\r\n\r\n        accountRepository.save(account);\r\n\r\n        User user = new User(request.getEmail(), request.getPIN());\r\n        userRepo.save(user);\r\n\r\n    }\r\n\r\n    //LOGIN\r\n    public String login(LoginRequest request) {\r\n\r\n        Account account = accountRepository.findByUsername(request.getEmail())\r\n                .orElseThrow(() -> new RuntimeException(\"User not found\"));\r\n\r\n        boolean matches = passwordEncoder.matches(\r\n                request.getPassword(),\r\n                account.getPassword());\r\n\r\n        if (!matches) {\r\n            throw new RuntimeException(\"Invalid password\");\r\n        }\r\n\r\n        return \"Login successful for: \" + account.getUsername();\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cargora/src/main/java/az/cargora/cargora/service/AccountService.java b/cargora/src/main/java/az/cargora/cargora/service/AccountService.java
+--- a/cargora/src/main/java/az/cargora/cargora/service/AccountService.java	(revision 9567a7740528c59617e71ce90c501e99638cdd6c)
++++ b/cargora/src/main/java/az/cargora/cargora/service/AccountService.java	(date 1776690210556)
+@@ -2,15 +2,20 @@
+ 
+ import org.springframework.stereotype.Service;
+ 
+-import az.cargora.cargora.dto.LoginRequest;
+-import az.cargora.cargora.dto.RegisterRequest;
++import az.cargora.cargora.dto.request.LoginRequest;
++import az.cargora.cargora.dto.request.RegisterRequest;
++import az.cargora.cargora.dto.response.AuthResponse;
+ import az.cargora.cargora.entity.Account;
+ import az.cargora.cargora.entity.User;
+ import az.cargora.cargora.enums.UserRole;
+ import az.cargora.cargora.repository.AccountRepository;
+ import az.cargora.cargora.repository.UserRepository;
++import az.cargora.cargora.security.JwtTokenProvider;
++import jakarta.transaction.Transactional;
+ import lombok.RequiredArgsConstructor;
+ 
++import org.springframework.security.authentication.AuthenticationManager;
++import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+ import org.springframework.security.crypto.password.PasswordEncoder;
+ 
+ @Service
+@@ -19,43 +24,69 @@
+ 
+     private final AccountRepository accountRepository;
+     private final PasswordEncoder passwordEncoder;
+-
+-    private final UserRepository userRepo;
++    private final JwtTokenProvider jwtTokenProvider;
++    private final AuthenticationManager authenticationManager;
+ 
+     // REGISTER
+-    public void register(RegisterRequest request) {
++    @Transactional
++    public AuthResponse register(RegisterRequest request) {
+ 
+         if (accountRepository.existsByUsername(request.getEmail())) {
+             throw new RuntimeException("Email already exists");
+         }
+ 
++        User user = new User();
++        user.setFullname(request.getFullname());
++        user.setPIN(request.getPIN());
++
+         Account account = new Account();
+         account.setUsername(request.getEmail());
+         account.setPassword(passwordEncoder.encode(request.getPassword()));
+         account.setEnabled(true);
+         account.setRole(UserRole.USER);
+ 
+-        accountRepository.save(account);
++        account.setUser(user);
+ 
+-        User user = new User(request.getEmail(), request.getPIN());
+-        userRepo.save(user);
++        String token = generateToken(account);
+ 
++        return createResponse(token, account);
+     }
+ 
+-    //LOGIN
+-    public String login(LoginRequest request) {
++    // LOGIN
++    public AuthResponse login(LoginRequest request) {
++
++        authenticationManager.authenticate(
++                new UsernamePasswordAuthenticationToken(
++                        request.getEmail(), request.getPassword()));
++
++        // Get full user details for token generation
++        Account account = accountRepository.findByUsername(request.getEmail()).get();
++
++        String token = generateToken(account);
++
++
++        return createResponse(token, account);
++    }
+ 
+-        Account account = accountRepository.findByUsername(request.getEmail())
+-                .orElseThrow(() -> new RuntimeException("User not found"));
++//---------------------------------------------------------------------------------
+ 
+-        boolean matches = passwordEncoder.matches(
+-                request.getPassword(),
+-                account.getPassword());
++    private String generateToken(Account account) {
++        String token = jwtTokenProvider.generateToken(
++                account.getUsername(),
++                account.getRole().name());
+ 
+-        if (!matches) {
+-            throw new RuntimeException("Invalid password");
+-        }
++        return token;
++
++    }
+ 
+-        return "Login successful for: " + account.getUsername();
++    private AuthResponse createResponse(String token, Account account){
++
++        AuthResponse response = new AuthResponse();
++        response.setToken(token);
++        response.setEmail(account.getUsername());
++        response.setRole(account.getRole().name());
++
++        return response;
++
+     }
+ }
