@@ -2,15 +2,14 @@ package az.cargora.cargora.controller;
 
 
 import az.cargora.cargora.entity.Package;
+import az.cargora.cargora.entity.PickUpPoint;
+import az.cargora.cargora.enums.PackageStatus;
 import az.cargora.cargora.service.PackageService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -18,6 +17,8 @@ import java.util.List;
 public class PackageController {
     private final PackageService packageService;
 
+    //BUNA REQUEST DTO EDERIK. DTO ICINDE VALIDASIYA, 
+    // PARAMETR UCUN @Valid, class ucun @Validated
     @PostMapping("/packages")
     public ResponseEntity<Package> createPackage(@RequestBody Package pkg) {
         Package createdPackage = packageService.createPackage(pkg);
@@ -35,4 +36,22 @@ public class PackageController {
         List<Package> packages = packageService.getUserPackages(userId);
         return ResponseEntity.ok(packages);
     }
+
+    @GetMapping("/packages/status/{status}")
+    public ResponseEntity<List<Package>> getPackagesByStatus(@PathVariable PackageStatus status) {
+        List<Package> packages = packageService.getPackagesByStatus(status);
+        return ResponseEntity.ok(packages);
+    }
+
+    @PatchMapping("package/{id}/weight")
+    public ResponseEntity<Package> UpdateWeight(@PathVariable Long id,@RequestBody BigDecimal weight) {
+        Package updatedPackage = packageService.updateWeight(id, weight);
+        return ResponseEntity.ok(updatedPackage);
+    }
+    @PatchMapping("package/{id}/destiantionBracnh")
+    public ResponseEntity<Package> UpdateDestinationBranch(@PathVariable Long id,@RequestBody PickUpPoint destiantionBranch) {
+        Package updatePackage = packageService.updatePickUpPoints(id,destiantionBranch);
+        return ResponseEntity.ok(updatePackage);
+    }
+
 }
