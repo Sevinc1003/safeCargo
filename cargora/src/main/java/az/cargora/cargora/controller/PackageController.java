@@ -5,6 +5,8 @@ import az.cargora.cargora.entity.Package;
 import az.cargora.cargora.entity.PickUpPoint;
 import az.cargora.cargora.enums.PackageStatus;
 import az.cargora.cargora.service.PackageService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
@@ -32,25 +34,25 @@ public class PackageController {
     }
 
     @GetMapping("/users/{userId}/packages")
-    public ResponseEntity<List<Package>> getAllPackages(@PathVariable Long userId) {
-        List<Package> packages = packageService.getUserPackages(userId);
+    public ResponseEntity<Page<Package>> getAllPackages(@PathVariable Long userId, Pageable pageable) {
+        Page<Package> packages = packageService.getUserPackages(userId, pageable);
         return ResponseEntity.ok(packages);
     }
 
     @GetMapping("/packages/status/{status}")
-    public ResponseEntity<List<Package>> getPackagesByStatus(@PathVariable PackageStatus status) {
-        List<Package> packages = packageService.getPackagesByStatus(status);
+    public ResponseEntity<Page<Package>> getPackagesByStatus(@PathVariable PackageStatus status, Pageable pageable) {
+        Page<Package> packages = packageService.getPackagesByStatus(status,pageable);
         return ResponseEntity.ok(packages);
     }
 
-    @PatchMapping("package/{id}/weight")
+    @PatchMapping("/package/{id}/weight")
     public ResponseEntity<Package> UpdateWeight(@PathVariable Long id,@RequestBody BigDecimal weight) {
         Package updatedPackage = packageService.updateWeight(id, weight);
         return ResponseEntity.ok(updatedPackage);
     }
-    @PatchMapping("package/{id}/destiantionBracnh")
-    public ResponseEntity<Package> UpdateDestinationBranch(@PathVariable Long id,@RequestBody PickUpPoint destiantionBranch) {
-        Package updatePackage = packageService.updatePickUpPoints(id,destiantionBranch);
+    @PatchMapping("/package/{id}/destiantionBracnh")
+    public ResponseEntity<Package> UpdateDestinationBranch(@PathVariable Long id,@RequestBody PickUpPoint destinationBranch) {
+        Package updatePackage = packageService.updatePickUpPoints(id,destinationBranch);
         return ResponseEntity.ok(updatePackage);
     }
 

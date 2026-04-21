@@ -7,8 +7,11 @@ import az.cargora.cargora.entity.PickUpPoint;
 import az.cargora.cargora.enums.PackageStatus; 
 import az.cargora.cargora.repository.PackageRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -34,8 +37,8 @@ public class PackageService {
     }
 
     @Transactional(readOnly = true)
-    public List<Package> getUserPackages(Long userId) {
-        return packageRepository.findByUserUserId(userId);
+    public Page<Package> getUserPackages(Long userId, Pageable pageable) {
+        return packageRepository.findByUserUserId(userId, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -44,8 +47,8 @@ public class PackageService {
     }
 
     @Transactional(readOnly = true)
-    public List<Package> getPackagesByStatus(PackageStatus status) {
-        return packageRepository.findByCurrentStatus(status);
+    public Page<Package> getPackagesByStatus(PackageStatus status, Pageable pageable) {
+        return packageRepository.findByCurrentStatus(status, pageable);
     }
 
     @Transactional
