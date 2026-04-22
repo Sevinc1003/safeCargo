@@ -1,10 +1,11 @@
+
 package az.cargora.cargora.service;
 
 import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.entity.Package;
 import az.cargora.cargora.entity.PickUpPoint;
 import az.cargora.cargora.entity.User;
-import az.cargora.cargora.enums.PackageStatus;
+import az.cargora.cargora.enums.PackageStatus; 
 import az.cargora.cargora.repository.PackageRepository;
 import az.cargora.cargora.repository.PickUpPointRepository;
 import az.cargora.cargora.repository.UserRepository;
@@ -18,7 +19,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class PackageService {
+public class Packageservice {
 
     private static final BigDecimal PRICE_PER_KG = BigDecimal.valueOf(5);
 
@@ -57,6 +58,11 @@ public class PackageService {
     @Transactional(readOnly = true)
     public Package getPackageById(Long packageId) {
         return getById(packageId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Package> getPackagesByStatus(PackageStatus status) {
+        return packageRepository.findByCurrentStatus(status);
     }
 
     @Transactional

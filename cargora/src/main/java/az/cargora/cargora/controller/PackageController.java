@@ -4,7 +4,8 @@ package az.cargora.cargora.controller;
 import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.entity.Package;
 import az.cargora.cargora.entity.PickUpPoint;
-import az.cargora.cargora.service.PackageService;
+import az.cargora.cargora.enums.PackageStatus;
+import az.cargora.cargora.service.Packageservice;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PackageController {
 
-    private final PackageService packageService;
+    private final Packageservice packageService;
 
 @PostMapping("/packages")
 public ResponseEntity<?> createPackage(@RequestBody @Valid newPackageRequest request) {
@@ -40,16 +41,20 @@ public ResponseEntity<?> createPackage(@RequestBody @Valid newPackageRequest req
         return ResponseEntity.ok(packages);
     }
 
-    @PatchMapping("/{id}/update-weight")
-    @PreAuthorize("hasRole('EMPLOYEE')")
-    public ResponseEntity<Package> UpdateWeight(@PathVariable Long id,@RequestBody BigDecimal newWeight) {
-        Package updatedPackage = packageService.updateWeight(id, newWeight);
-        return ResponseEntity.ok(updatedPackage);
+    @GetMapping("/packages/status/{status}")
+    public ResponseEntity<List<Package>> getPackagesByStatus(@PathVariable PackageStatus status) {
+        List<Package> packages = packageService.getPackagesByStatus(status);
+        return ResponseEntity.ok(packages);
     }
 
-    @PatchMapping("{id}/new-destiantionBranch")
-    public ResponseEntity<Package> UpdateDestinationBranch(@PathVariable Long id,@RequestBody PickUpPoint newDestiantionBranch) {
-        Package updatePackage = packageService.updatePickUpPoints(id,newDestiantionBranch);
+    @PatchMapping("package/{id}/weight")
+    public ResponseEntity<Package> UpdateWeight(@PathVariable Long id,@RequestBody BigDecimal weight) {
+        Package updatedPackage = packageService.updateWeight(id, weight);
+        return ResponseEntity.ok(updatedPackage);
+    }
+    @PatchMapping("package/{id}/destiantionBracnh")
+    public ResponseEntity<Package> UpdateDestinationBranch(@PathVariable Long id,@RequestBody PickUpPoint destiantionBranch) {
+        Package updatePackage = packageService.updatePickUpPoints(id,destiantionBranch);
         return ResponseEntity.ok(updatePackage);
     }
 
