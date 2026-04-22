@@ -38,7 +38,7 @@ public class PackageHistoryService {
     }
 
     public List<PackageHistory> getPackageHistory(Long packageId) {
-    return repo.findByRelatedPackage_Id(packageId);
+    return repo.findByRelatedPackageId(packageId);
 }
 
 }

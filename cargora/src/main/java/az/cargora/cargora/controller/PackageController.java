@@ -40,14 +40,14 @@ public ResponseEntity<?> createPackage(@RequestBody @Valid newPackageRequest req
         return ResponseEntity.ok(packages);
     }
 
-    @PatchMapping("/{id}/new-weight")
-    @PreAuthorize("hasRole('ROLE_VIEWER')")
+    @PatchMapping("/{id}/update-weight")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     public ResponseEntity<Package> UpdateWeight(@PathVariable Long id,@RequestBody BigDecimal newWeight) {
         Package updatedPackage = packageService.updateWeight(id, newWeight);
         return ResponseEntity.ok(updatedPackage);
     }
 
-    @PatchMapping("{id}/new-destiantionBracnh")
+    @PatchMapping("{id}/new-destiantionBranch")
     public ResponseEntity<Package> UpdateDestinationBranch(@PathVariable Long id,@RequestBody PickUpPoint newDestiantionBranch) {
         Package updatePackage = packageService.updatePickUpPoints(id,newDestiantionBranch);
         return ResponseEntity.ok(updatePackage);
