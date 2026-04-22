@@ -13,5 +13,5 @@ public interface PackageHistoryRepository extends JpaRepository<PackageHistory, 
 
     List<PackageHistory> findByRelatedPackage_Id(Long packageId);
 
-    Optional<PackageHistory> findTopByPackageIdOrderByTimestampDesc(Long packageId);
+    Optional<PackageHistory> findTopByRelatedPackageIdOrderByTimestampDesc(Long packageId);
 }
