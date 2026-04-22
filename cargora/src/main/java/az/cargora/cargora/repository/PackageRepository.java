@@ -30,11 +30,13 @@ public interface PackageRepository extends JpaRepository<Package,Long> {
                   where h2.relatedPackage = p
               )
             """)
+
     Page<Package> findByCurrentStatus(@Param("status") PackageStatus status, Pageable pageable);
 
     Optional<Package> findByTrackingNumber(String trackingNumber);
 
-
-    
+    // Xüsusi Query: Müəyyən bir təhvil məntəqəsinə (filiala) göndərilmiş bütün bağlamaları tapır
+    @Query("SELECT p FROM Package p WHERE p.destinationBranch.id = :branchId")
+    java.util.List<Package> findPackagesByDestinationBranch(@Param("branchId") Long branchId);
 
 }
