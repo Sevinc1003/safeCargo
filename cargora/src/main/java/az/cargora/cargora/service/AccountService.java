@@ -23,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class AccountService {
 
     private final AccountRepository accountRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
@@ -31,21 +32,24 @@ public class AccountService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
 
-        if (accountRepository.existsByUsername(request.getEmail())) {
+        if (accountRepository.existsByUsername(request.getUsername()) || userRepository.existsByEmail(request.getUsername())) {
             throw new RuntimeException("Email already exists");
         }
 
         User user = new User();
         user.setFullname(request.getFullname());
         user.setPIN(request.getPIN());
+        user.setEmail(request.getUsername());
 
         Account account = new Account();
-        account.setUsername(request.getEmail());
+        account.setUsername(request.getUsername());
         account.setPassword(passwordEncoder.encode(request.getPassword()));
         account.setEnabled(true);
         account.setRole(UserRole.USER);
 
         account.setUser(user);
+
+        accountRepository.save(account);
 
         String token = generateToken(account);
 
@@ -57,18 +61,23 @@ public class AccountService {
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail(), request.getPassword()));
+                        request.getUsername(), request.getPassword()));
 
         // Get full user details for token generation
-        Account account = accountRepository.findByUsername(request.getEmail()).get();
+        Account account = accountRepository.findByUsername(request.getUsername()).get();
 
         String token = generateToken(account);
-
 
         return createResponse(token, account);
     }
 
-//---------------------------------------------------------------------------------
+    public Long getUserIdByUsername(String username) {
+        return accountRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Account not found"))
+                .getUser().getUserId();
+    }
+
+    // ---------------------------------------------------------------------------------
 
     private String generateToken(Account account) {
         String token = jwtTokenProvider.generateToken(
@@ -79,7 +88,7 @@ public class AccountService {
 
     }
 
-    private AuthResponse createResponse(String token, Account account){
+    private AuthResponse createResponse(String token, Account account) {
 
         AuthResponse response = new AuthResponse();
         response.setToken(token);

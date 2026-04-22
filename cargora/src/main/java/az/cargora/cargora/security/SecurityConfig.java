@@ -39,10 +39,9 @@ public class SecurityConfig {
         jdbcDao.setUsersByUsernameQuery(
                 "SELECT username, password, enabled FROM accounts WHERE username = ?");
 
-        // asagidaki query'ni athorities hazir olanda uygunlasdiraram
-        // jdbcDao.setAuthoritiesByUsernameQuery(
-        // "SELECT username, role FROM users WHERE username = ?"
-        // );
+        jdbcDao.setAuthoritiesByUsernameQuery(
+        "SELECT username, CONCAT('ROLE_', role) FROM accounts WHERE username = ?"
+        );
 
         return jdbcDao;
     }
@@ -56,23 +55,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Disable CSRF for REST API testing
                 .csrf(csrf -> csrf.disable())
-
-                // Enable HTTP Basic authentication for now
                 .httpBasic(Customizer.withDefaults())
-
-                // Configure endpoint access rules
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints - no authentication required
-                        .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .anyRequest().permitAll()
 
-                        // Admin-only endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
-
-                        // All other endpoints require authentication
-                        .anyRequest().authenticated());
+                );
 
         return http.build();
     }

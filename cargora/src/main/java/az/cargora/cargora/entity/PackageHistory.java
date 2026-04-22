@@ -13,6 +13,7 @@ import az.cargora.cargora.enums.PackageStatus;
 @Getter
 @Setter
 public class PackageHistory {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

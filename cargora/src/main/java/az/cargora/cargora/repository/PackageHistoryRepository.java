@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PackageHistoryRepository extends JpaRepository<PackageHistory, Long> {
 
-    List<PackageHistory> findByRelatedPackage_Id(Long packageId);
+    List<PackageHistory> findByRelatedPackageId(Long packageId);
 
     Optional<PackageHistory> findTopByRelatedPackageIdOrderByTimestampDesc(Long packageId);
 }
