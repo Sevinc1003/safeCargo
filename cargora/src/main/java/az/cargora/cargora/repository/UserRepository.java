@@ -12,7 +12,7 @@ public interface UserRepository extends JpaRepository<User, Long>{
 
     Optional<User> findByPIN(String PIN);
 
-
+    boolean existsByEmail(String email);
 
    // sas
 

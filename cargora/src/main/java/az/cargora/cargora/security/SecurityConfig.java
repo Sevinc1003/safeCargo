@@ -39,10 +39,9 @@ public class SecurityConfig {
         jdbcDao.setUsersByUsernameQuery(
                 "SELECT username, password, enabled FROM accounts WHERE username = ?");
 
-        // asagidaki query'ni athorities hazir olanda uygunlasdiraram
-        // jdbcDao.setAuthoritiesByUsernameQuery(
-        // "SELECT username, role FROM users WHERE username = ?"
-        // );
+        jdbcDao.setAuthoritiesByUsernameQuery(
+        "SELECT username, CONCAT('ROLE_', role) FROM accounts WHERE username = ?"
+        );
 
         return jdbcDao;
     }
@@ -59,7 +58,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .httpBasic(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .anyRequest().permitAll()
 
                 );
 
