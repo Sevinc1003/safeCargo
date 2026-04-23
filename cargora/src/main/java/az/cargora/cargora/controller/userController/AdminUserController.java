@@ -3,7 +3,7 @@ package az.cargora.cargora.controller.userController;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
+import az.cargora.cargora.service.AccountService;
 import az.cargora.cargora.service.UserService;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminUserController {
 
     private final UserService userService;
+    private final AccountService accountService;
 
     @PutMapping("/{userId}/update-address")
     public ResponseEntity<Void> updateUserHomeAddress(
@@ -32,6 +33,15 @@ public class AdminUserController {
             @RequestBody @NotNull Long pickupPointAddressId) {
 
         userService.updatePickupPoint(userId, pickupPointAddressId);
+
+        return ResponseEntity.ok().build();
+    }
+
+    //disable enable eden metod
+
+    @PatchMapping("/disable-user/{userId}")
+    public ResponseEntity<Void> disableUser(@PathVariable Long userId){
+        accountService.disableUser(userId);
 
         return ResponseEntity.ok().build();
     }

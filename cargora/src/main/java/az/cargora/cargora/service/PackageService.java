@@ -5,7 +5,7 @@ import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.entity.Package;
 import az.cargora.cargora.entity.PickUpPoint;
 import az.cargora.cargora.entity.User;
-import az.cargora.cargora.enums.PackageStatus; 
+import az.cargora.cargora.enums.PackageStatus;
 import az.cargora.cargora.repository.PackageRepository;
 import az.cargora.cargora.repository.PickUpPointRepository;
 import az.cargora.cargora.repository.UserRepository;
@@ -19,17 +19,21 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class Packageservice {
+public class PackageService {
 
     private static final BigDecimal PRICE_PER_KG = BigDecimal.valueOf(5);
 
     private final PackageRepository packageRepository;
-    private final PackageHistoryService packageHistory;
     private final UserRepository userRepository;
     private final PickUpPointRepository pickUpPointRepository;
 
     @Transactional
     public void createPackage(newPackageRequest request) {
+
+        if (packageRepository.existsByTrackingNumber(request.getTrackingNumber())) {
+            throw new RuntimeException("Package already exist");
+        }
+        
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -38,6 +42,7 @@ public class Packageservice {
 
         Package pkg = new Package();
 
+        
         pkg.setUser(user);
         pkg.setDestinationBranch(branch);
         pkg.setTrackingNumber(request.getTrackingNumber());
@@ -46,7 +51,8 @@ public class Packageservice {
         pkg.setInternalTrackingCode(generateInternalTrackingCode());
 
         packageRepository.save(pkg);
-    }
+
+    } 
 
     
 
@@ -77,15 +83,16 @@ public class Packageservice {
         return packageRepository.save(pkg);
     }
 
-    @Transactional
+   @Transactional
     public Package updatePickUpPoints(Long packageId, PickUpPoint destinationBranch) {
         Package pkg = getById(packageId);
         pkg.setDestinationBranch(destinationBranch);
         return packageRepository.save(pkg);
     }
 
-    
+         
 //----------------------------------------
+
     @Transactional
     private BigDecimal calculateShippingFee(BigDecimal weight) {
         if (weight == null) {

@@ -2,6 +2,6 @@ package az.cargora.cargora.enums;
 
 public enum UserRole {
 
-    USER, ADMIN, EMPLOYEE
+    ROLE_USER, ROLE_ADMIN, ROLE_EMPLOYEE
 
 }

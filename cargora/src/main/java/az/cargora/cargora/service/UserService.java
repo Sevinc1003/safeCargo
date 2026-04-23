@@ -87,7 +87,6 @@ public class UserService {
         }
     }
 
-    // --------------------------------------------------------------
 
     @Transactional
     public void updateBonus(long userId, BigDecimal amount) {
