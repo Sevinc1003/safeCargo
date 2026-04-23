@@ -4,6 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,13 +15,11 @@ import java.io.IOException;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
 
-    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
-        this.jwtTokenProvider = jwtTokenProvider;
-    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -35,6 +35,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtTokenProvider.validateToken(token)) {
                 String email = jwtTokenProvider.getEmailFromToken(token);
                 String role = jwtTokenProvider.getRoleFromToken(token);
+
+                //------------------
+                 System.out.println("TOKEN: " + token);
+    System.out.println("VALID: " + jwtTokenProvider.validateToken(token));
+    System.out.println("EMAIL: " + jwtTokenProvider.getEmailFromToken(token));
+    System.out.println("ROLE: " + jwtTokenProvider.getRoleFromToken(token));
+                //------------------
 
                 UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
