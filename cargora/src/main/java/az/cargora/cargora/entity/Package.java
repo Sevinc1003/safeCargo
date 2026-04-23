@@ -31,7 +31,7 @@ public class Package {
     @JoinColumn(name = "destination_branch_id", nullable = false)
     private PickUpPoint destinationBranch;
 
-    @Column(name = "tracking_number", nullable = false)
+    @Column(name = "tracking_number", nullable = false, unique = true)
     private String trackingNumber;
 
     @Column(name = "internal_tracking_code", unique = true, nullable = false)

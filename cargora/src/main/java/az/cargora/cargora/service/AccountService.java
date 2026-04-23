@@ -8,6 +8,8 @@ import az.cargora.cargora.dto.response.AuthResponse;
 import az.cargora.cargora.entity.Account;
 import az.cargora.cargora.entity.User;
 import az.cargora.cargora.enums.UserRole;
+import az.cargora.cargora.exception.customExceptions.DisabledException;
+import az.cargora.cargora.exception.customExceptions.UserAlreadyExistsException;
 import az.cargora.cargora.repository.AccountRepository;
 import az.cargora.cargora.repository.UserRepository;
 import az.cargora.cargora.security.JwtTokenProvider;
@@ -15,6 +17,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -23,7 +26,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class AccountService {
 
     private final AccountRepository accountRepository;
-    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
@@ -32,8 +34,8 @@ public class AccountService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
 
-        if (accountRepository.existsByUsername(request.getUsername()) || userRepository.existsByEmail(request.getUsername())) {
-            throw new RuntimeException("Email already exists");
+        if (accountRepository.existsByUsername(request.getUsername())) {
+            throw new UserAlreadyExistsException("This email already exists");
         }
 
         User user = new User();
@@ -45,7 +47,7 @@ public class AccountService {
         account.setUsername(request.getUsername());
         account.setPassword(passwordEncoder.encode(request.getPassword()));
         account.setEnabled(true);
-        account.setRole(UserRole.USER);
+        account.setRole(UserRole.ROLE_USER);
 
         account.setUser(user);
 
@@ -59,12 +61,22 @@ public class AccountService {
     // LOGIN
     public AuthResponse login(LoginRequest request) {
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(), request.getPassword()));
+        Account account = accountRepository.findByUsername(request.getUsername()).get();
+
+        if (!account.isEnabled()) {
+            throw new DisabledException("Account is disabled");
+        }
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(),
+                            request.getPassword()));
+        } catch (BadCredentialsException ex) {
+            throw new BadCredentialsException("your email or password is incorrect. Please input it correctly.");
+        }
 
         // Get full user details for token generation
-        Account account = accountRepository.findByUsername(request.getUsername()).get();
 
         String token = generateToken(account);
 
@@ -75,6 +87,17 @@ public class AccountService {
         return accountRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Account not found"))
                 .getUser().getUserId();
+    }
+
+    @Transactional
+    public void disableUser(Long userId) {
+
+        Account account = accountRepository.findByUser_UserId(userId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        account.setEnabled(false);
+        accountRepository.save(account);
+
     }
 
     // ---------------------------------------------------------------------------------

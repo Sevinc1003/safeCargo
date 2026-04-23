@@ -5,7 +5,7 @@ import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.entity.Package;
 import az.cargora.cargora.entity.PickUpPoint;
 import az.cargora.cargora.enums.PackageStatus;
-import az.cargora.cargora.service.Packageservice;
+import az.cargora.cargora.service.PackageService;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -21,9 +21,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PackageController {
 
-    private final Packageservice packageService;
+    private final PackageService packageService;
 
-@PostMapping("/packages")
+@PostMapping("/create-new")
+@PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
 public ResponseEntity<?> createPackage(@RequestBody @Valid newPackageRequest request) {
     packageService.createPackage(request);
     return ResponseEntity.ok("Package created");
