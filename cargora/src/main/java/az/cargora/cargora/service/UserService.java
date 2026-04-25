@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import az.cargora.cargora.dto.request.TopUpRequest;
 import az.cargora.cargora.entity.PickUpPoint;
 import az.cargora.cargora.entity.User;
+import az.cargora.cargora.exception.customExceptions.UserNotFoundException;
 import az.cargora.cargora.payment.FakeStripeService;
 import az.cargora.cargora.payment.StripeChargeRequest;
 import az.cargora.cargora.payment.StripeChargeResponse;
@@ -29,20 +30,20 @@ public class UserService {
     }
 
     public User getUserById(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        return findUser(userId);
+
     }
 
     public User getUserByPin(String pin) {
         return userRepository.findByPIN(pin)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
     }
 
     @Transactional
     public void updatePickupPoint(Long userId, Long pickupPointId) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                User user = findUser(userId);
+
 
         PickUpPoint point = pickUpPointRepository.findById(pickupPointId)
                 .orElseThrow(() -> new RuntimeException("Pickup point not found"));
@@ -52,8 +53,7 @@ public class UserService {
 
     public void updateHomeAddress(Long userId, String address) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                User user = findUser(userId);
 
         user.setHomeAddress(address);
 
@@ -75,9 +75,8 @@ public class UserService {
         // 3. if successed
         if (stripeResponse.isSuccess()) {
 
-            User user = userRepository
-                    .findById(request.getUserId())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+                    User user = findUser(request.getUserId());
+
 
             user.setBalance(
                     user.getBalance().add(request.getAmount()));
@@ -87,13 +86,21 @@ public class UserService {
         }
     }
 
-
     @Transactional
     public void updateBonus(long userId, BigDecimal amount) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        User user = findUser(userId);
 
         user.setBonus(user.getBonus().add(amount));
+    }
+    
+
+    private User findUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException());
+
+        return user;
+
     }
 
 }
