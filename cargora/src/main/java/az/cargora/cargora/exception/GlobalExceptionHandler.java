@@ -1,5 +1,7 @@
 package az.cargora.cargora.exception;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -47,16 +49,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
-
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "bad_request",
-                ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-    }
+@ExceptionHandler(MethodArgumentNotValidException.class)
+public ResponseEntity<ValidationErrorResponse> handleValidation(
+        MethodArgumentNotValidException ex) {
+ 
+    List<String> errors = ex.getBindingResult()
+        .getFieldErrors()
+        .stream()
+        .map(error -> error.getField() + ": " + error.getDefaultMessage())
+        .toList();
+ 
+    ValidationErrorResponse response = new ValidationErrorResponse(
+        HttpStatus.BAD_REQUEST.value(),
+        "Validation Failed",
+        errors
+    );
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+}
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {

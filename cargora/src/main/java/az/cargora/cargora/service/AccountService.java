@@ -101,6 +101,17 @@ public class AccountService {
 
     }
 
+    @Transactional
+    public void enableUser(Long userId) {
+
+        Account account = accountRepository.findByUser_UserId(userId)
+                .orElseThrow(() -> new UserNotFoundException());
+
+        account.setEnabled(true);
+        accountRepository.save(account);
+
+    }
+
     // ---------------------------------------------------------------------------------
 
     private String generateToken(Account account) {
