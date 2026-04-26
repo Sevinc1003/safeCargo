@@ -10,6 +10,7 @@ import az.cargora.cargora.entity.User;
 import az.cargora.cargora.enums.UserRole;
 import az.cargora.cargora.exception.customExceptions.DisabledException;
 import az.cargora.cargora.exception.customExceptions.UserAlreadyExistsException;
+import az.cargora.cargora.exception.customExceptions.UserNotFoundException;
 import az.cargora.cargora.repository.AccountRepository;
 import az.cargora.cargora.repository.UserRepository;
 import az.cargora.cargora.security.JwtTokenProvider;
@@ -85,7 +86,7 @@ public class AccountService {
 
     public Long getUserIdByUsername(String username) {
         return accountRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Account not found"))
+                .orElseThrow(() -> new UserNotFoundException())
                 .getUser().getUserId();
     }
 
@@ -93,9 +94,20 @@ public class AccountService {
     public void disableUser(Long userId) {
 
         Account account = accountRepository.findByUser_UserId(userId)
-                .orElseThrow(() -> new RuntimeException("Account not found"));
+                .orElseThrow(() -> new UserNotFoundException());
 
         account.setEnabled(false);
+        accountRepository.save(account);
+
+    }
+
+    @Transactional
+    public void enableUser(Long userId) {
+
+        Account account = accountRepository.findByUser_UserId(userId)
+                .orElseThrow(() -> new UserNotFoundException());
+
+        account.setEnabled(true);
         accountRepository.save(account);
 
     }

@@ -2,6 +2,7 @@ package az.cargora.cargora.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ import az.cargora.cargora.enums.PackageStatus;
 @Table(name = "package_history")
 @Getter
 @Setter
+@NoArgsConstructor
 public class PackageHistory {
     
     @Id
