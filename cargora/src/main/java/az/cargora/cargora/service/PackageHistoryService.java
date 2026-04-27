@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import az.cargora.cargora.dto.response.PackageHistoryResponseDTO;
 import az.cargora.cargora.entity.PackageHistory;
 import az.cargora.cargora.entity.User;
 import az.cargora.cargora.enums.PackageStatus;
@@ -37,8 +38,14 @@ public class PackageHistoryService {
 
     }
 
-    public List<PackageHistory> getPackageHistory(Long packageId) {
-    return repo.findByRelatedPackageId(packageId);
+    public List<PackageHistoryResponseDTO> getPackageHistory(Long packageId) {
+        return repo.findByRelatedPackageId(packageId)
+                .stream()
+                .map(history -> new PackageHistoryResponseDTO(
+                        history.getStatus(),
+                        history.getTimestamp()
+                ))
+                .toList();
+    }
 }
 
-}
