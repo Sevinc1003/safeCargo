@@ -4,14 +4,20 @@ package az.cargora.cargora.service;
 import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.dto.response.PackageResponse;
 import az.cargora.cargora.entity.Package;
+import az.cargora.cargora.entity.Account;
 import az.cargora.cargora.entity.PackageHistory;
 import az.cargora.cargora.entity.PickUpPoint;
 import az.cargora.cargora.entity.User;
 import az.cargora.cargora.enums.PackageStatus;
+import az.cargora.cargora.enums.UserRole;
+import az.cargora.cargora.exception.customExceptions.UserNotFoundException;
+import az.cargora.cargora.repository.AccountRepository;
 import az.cargora.cargora.repository.PackageRepository;
 import az.cargora.cargora.repository.PickUpPointRepository;
 import az.cargora.cargora.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +37,7 @@ public class PackageService {
     private final PackageRepository packageRepository;
     private final UserRepository userRepository;
     private final PickUpPointRepository pickUpPointRepository;
+    private final AccountRepository accountRepository;
 
     @Transactional
     public void createPackage(newPackageRequest request) {
@@ -132,6 +139,14 @@ public class PackageService {
             LocalDateTime to,
             BigDecimal minWeight,
             BigDecimal maxWeight) {
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String role = getRoleByUsername(username);
+
+        if(role.equals(UserRole.ROLE_USER.name())){
+
+            pin = accountRepository.findByUsername(username).get().getUser().getPIN();
+        }
         
         List<Package> pkgs = packageRepository.filterPackages(
                 pin,
@@ -146,6 +161,12 @@ public class PackageService {
     }
 
     // ----------------------------------------
+
+    private String getRoleByUsername(String username) {
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException());
+        return account.getRole().name();
+    }
 
     @Transactional
     private BigDecimal calculateShippingFee(BigDecimal weight) {
