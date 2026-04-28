@@ -140,14 +140,29 @@ public class PackageService {
             BigDecimal minWeight,
             BigDecimal maxWeight) {
 
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        String role = getRoleByUsername(username);
+        List<Package> pkgs = packageRepository.filterPackages(
+                pin,
+                branchId,
+                status,
+                from,
+                to,
+                minWeight,
+                maxWeight);
 
-        if(role.equals(UserRole.ROLE_USER.name())){
+        return pkgs.stream().map(this::mapOf).toList();
+    }
 
-            pin = accountRepository.findByUsername(username).get().getUser().getPIN();
-        }
-        
+    @Transactional(readOnly = true)
+    public List<PackageResponse> filterPackagesAsUser(
+            Long branchId,
+            PackageStatus status,
+            LocalDateTime from,
+            LocalDateTime to,
+            BigDecimal minWeight,
+            BigDecimal maxWeight) {
+
+        String pin = getPinOfUser();
+
         List<Package> pkgs = packageRepository.filterPackages(
                 pin,
                 branchId,
@@ -162,10 +177,13 @@ public class PackageService {
 
     // ----------------------------------------
 
-    private String getRoleByUsername(String username) {
-        Account account = accountRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException());
-        return account.getRole().name();
+    @Transactional(readOnly = true)
+    private String getPinOfUser() {
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String pin = accountRepository.findByUsername(username).get().getUser().getPIN();
+
+        return pin;
     }
 
     @Transactional

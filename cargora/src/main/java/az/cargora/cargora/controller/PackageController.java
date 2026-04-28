@@ -40,19 +40,19 @@ public class PackageController {
         return ResponseEntity.ok(foundPackage);
     }
 
-    // permitAll
     @GetMapping("/tracking-code/{code}")
     public ResponseEntity<PackageResponse> getPackageByTrackingCode(@PathVariable String code) {
         PackageResponse pkg = packageService.findByTrackingCode(code);
         return ResponseEntity.ok(pkg);
     }
 
-    // this 2 methods still need update(for employye/admin and user other type)
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     @GetMapping("/of-user/{PIN}")
     public ResponseEntity<List<PackageResponse>> getAllPackages(@PathVariable String PIN) {
         List<PackageResponse> packages = packageService.getUserPackages(PIN);
         return ResponseEntity.ok(packages);
     }
+
 
     @GetMapping("/status/{status}")
     public ResponseEntity<List<PackageResponse>> getPackagesByStatus(@PathVariable PackageStatus status) {
@@ -72,7 +72,8 @@ public class PackageController {
         return ResponseEntity.ok("PickUpPoint updated successfully");
     }
 
-    @GetMapping("filter-by")
+    @GetMapping("filter-as-admin")
+        @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     public List<PackageResponse> filter(
             @RequestParam(required = false) String pin,
             @RequestParam(required = false) Long branchId,
@@ -83,6 +84,20 @@ public class PackageController {
             @RequestParam(required = false) BigDecimal maxWeight) {
 
         return packageService.filterPackages(pin, branchId, status, from, to, minWeight, maxWeight);
+    }
+
+    @GetMapping("filter-by")
+        @PreAuthorize("hasAnyRole('USER')")
+
+    public List<PackageResponse> filterAsUser(
+            @RequestParam(required = false) Long branchId,
+            @RequestParam(required = false) PackageStatus status,
+            @RequestParam(required = false) LocalDateTime from,
+            @RequestParam(required = false) LocalDateTime to,
+            @RequestParam(required = false) BigDecimal minWeight,
+            @RequestParam(required = false) BigDecimal maxWeight) {
+
+        return packageService.filterPackagesAsUser(branchId, status, from, to, minWeight, maxWeight);
     }
 
 }
