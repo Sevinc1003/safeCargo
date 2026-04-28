@@ -39,34 +39,34 @@ public interface PackageRepository extends JpaRepository<Package, Long> {
     Optional<Package> findByInternalTrackingCode(String internalTrackingCode);
 
     @Query("""
-                SELECT p
-                FROM Package p
-                JOIN PackageHistory ph ON ph.relatedPackage = p
-                WHERE
-                    (:pin IS NULL OR p.user.PIN = :pin)
-                    AND (:branchId IS NULL OR p.destinationBranch.id = :branchId)
-                    AND (
-                        :status IS NULL OR (
-                            ph.timestamp = (
-                                SELECT MAX(ph2.timestamp)
-                                FROM PackageHistory ph2
-                                WHERE ph2.relatedPackage = p
-                            )
-                            AND ph.status = :status
-                        )
-                    )
-                    AND (:from IS NULL OR p.createdAt >= :from)
-                    AND (:to IS NULL OR p.createdAt <= :to)
-                    AND (:minWeight IS NULL OR p.weight >= :minWeight)
-                    AND (:maxWeight IS NULL OR p.weight <= :maxWeight)
-            """)
-    List<Package> filterPackages(
-            @Param("pin") String pin,
-            @Param("branchId") Long branchId,
-            @Param("status") PackageStatus status,
-            @Param("from") LocalDateTime from,
-            @Param("to") LocalDateTime to,
-            @Param("minWeight") BigDecimal minWeight,
-            @Param("maxWeight") BigDecimal maxWeight);
-
+    SELECT p
+    FROM Package p
+    WHERE
+        (:pin IS NULL OR p.user.PIN = :pin)
+        AND (:branchId IS NULL OR p.destinationBranch.id = :branchId)
+        AND (:from IS NULL OR p.createdAt >= :from)
+        AND (:to IS NULL OR p.createdAt <= :to)
+        AND (:minWeight IS NULL OR p.weight >= :minWeight)
+        AND (:maxWeight IS NULL OR p.weight <= :maxWeight)
+        AND (
+            :status IS NULL OR EXISTS (
+                SELECT 1 FROM PackageHistory ph
+                WHERE ph.relatedPackage = p
+                AND ph.status = :status
+                AND ph.timestamp = (
+                    SELECT MAX(ph2.timestamp)
+                    FROM PackageHistory ph2
+                    WHERE ph2.relatedPackage = p
+                )
+            )
+        )
+    """)
+List<Package> filterPackages(
+        @Param("pin") String pin,
+        @Param("branchId") Long branchId,
+        @Param("status") PackageStatus status,
+        @Param("from") LocalDateTime from,
+        @Param("to") LocalDateTime to,
+        @Param("minWeight") BigDecimal minWeight,
+        @Param("maxWeight") BigDecimal maxWeight);
 }

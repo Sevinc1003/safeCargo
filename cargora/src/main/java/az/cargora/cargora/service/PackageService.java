@@ -4,14 +4,20 @@ package az.cargora.cargora.service;
 import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.dto.response.PackageResponse;
 import az.cargora.cargora.entity.Package;
+import az.cargora.cargora.entity.Account;
 import az.cargora.cargora.entity.PackageHistory;
 import az.cargora.cargora.entity.PickUpPoint;
 import az.cargora.cargora.entity.User;
 import az.cargora.cargora.enums.PackageStatus;
+import az.cargora.cargora.enums.UserRole;
+import az.cargora.cargora.exception.customExceptions.UserNotFoundException;
+import az.cargora.cargora.repository.AccountRepository;
 import az.cargora.cargora.repository.PackageRepository;
 import az.cargora.cargora.repository.PickUpPointRepository;
 import az.cargora.cargora.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +37,7 @@ public class PackageService {
     private final PackageRepository packageRepository;
     private final UserRepository userRepository;
     private final PickUpPointRepository pickUpPointRepository;
+    private final AccountRepository accountRepository;
 
     @Transactional
     public void createPackage(newPackageRequest request) {
@@ -145,7 +152,39 @@ public class PackageService {
         return pkgs.stream().map(this::mapOf).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<PackageResponse> filterPackagesAsUser(
+            Long branchId,
+            PackageStatus status,
+            LocalDateTime from,
+            LocalDateTime to,
+            BigDecimal minWeight,
+            BigDecimal maxWeight) {
+
+        String pin = getPinOfUser();
+
+        List<Package> pkgs = packageRepository.filterPackages(
+                pin,
+                branchId,
+                status,
+                from,
+                to,
+                minWeight,
+                maxWeight);
+
+        return pkgs.stream().map(this::mapOf).toList();
+    }
+
     // ----------------------------------------
+
+    @Transactional(readOnly = true)
+    private String getPinOfUser() {
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String pin = accountRepository.findByUsername(username).get().getUser().getPIN();
+
+        return pin;
+    }
 
     @Transactional
     private BigDecimal calculateShippingFee(BigDecimal weight) {
