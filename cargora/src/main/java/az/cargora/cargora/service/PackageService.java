@@ -14,6 +14,8 @@ import az.cargora.cargora.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -59,20 +61,11 @@ public class PackageService {
     }
 
     @Transactional(readOnly = true)
-    public List<PackageResponse> getUserPackages(String PIN) {
-
-        List<Package> pkgs = packageRepository.findByUserPIN(PIN);
-        List<PackageResponse> pkgResponse = new ArrayList<>();
-        ;
-
-        for (Package p : pkgs) {
-
-            pkgResponse.add(mapOf(p));
-
-        }
-
-        return pkgResponse;
+    public Page<PackageResponse> getUserPackages(String PIN, Pageable pageable) {
+        return packageRepository.findByUserPIN(PIN, pageable)
+                .map(this::mapOf);
     }
+
 
     @Transactional(readOnly = true)
     public PackageResponse getPackageById(Long packageId) {
@@ -101,6 +94,11 @@ public class PackageService {
         }
 
         return pkgResponse;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Package> getUserPackagesByUserId(Long userId, Pageable pageable) {
+        return packageRepository.findByUserUserId(userId, pageable);
     }
 
     @Transactional

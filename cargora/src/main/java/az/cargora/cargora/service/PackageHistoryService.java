@@ -11,6 +11,8 @@ import az.cargora.cargora.entity.User;
 import az.cargora.cargora.enums.PackageStatus;
 import az.cargora.cargora.repository.PackageHistoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
@@ -38,14 +40,12 @@ public class PackageHistoryService {
 
     }
 
-    public List<PackageHistoryResponseDTO> getPackageHistory(Long packageId) {
-        return repo.findByRelatedPackageId(packageId)
-                .stream()
+    public Page<PackageHistoryResponseDTO> getPackageHistory(Long packageId, Pageable   pageable) {
+        return repo.findByRelatedPackageId(packageId, pageable)
                 .map(history -> new PackageHistoryResponseDTO(
                         history.getStatus(),
                         history.getTimestamp()
-                ))
-                .toList();
+                ));
     }
 }
 
