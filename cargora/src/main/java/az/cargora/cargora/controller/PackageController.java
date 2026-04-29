@@ -14,6 +14,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -48,8 +51,10 @@ public class PackageController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     @GetMapping("/of-user/{PIN}")
-    public ResponseEntity<List<PackageResponse>> getAllPackages(@PathVariable String PIN) {
-        List<PackageResponse> packages = packageService.getUserPackages(PIN);
+    public ResponseEntity<Page<PackageResponse>> getAllPackages(
+            @PathVariable String PIN,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<PackageResponse> packages = packageService.getUserPackages(PIN, pageable);
         return ResponseEntity.ok(packages);
     }
 
