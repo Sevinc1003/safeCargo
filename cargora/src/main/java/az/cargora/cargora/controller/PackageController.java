@@ -9,6 +9,7 @@ import az.cargora.cargora.enums.PackageStatus;
 import az.cargora.cargora.service.PackageService;
 import jakarta.validation.Valid;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -34,7 +35,7 @@ public class PackageController {
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     public ResponseEntity<?> createPackage(@RequestBody @Valid newPackageRequest request) {
         packageService.createPackage(request);
-        return ResponseEntity.ok("Package created");
+        return ResponseEntity.status(HttpStatus.CREATED).body("New package successfully added");
     }
 
     @GetMapping("/{id}")
@@ -58,7 +59,6 @@ public class PackageController {
         return ResponseEntity.ok(packages);
     }
 
-
     @GetMapping("/status/{status}")
     public ResponseEntity<List<PackageResponse>> getPackagesByStatus(@PathVariable PackageStatus status) {
         List<PackageResponse> packages = packageService.getPackagesByStatus(status);
@@ -78,7 +78,7 @@ public class PackageController {
     }
 
     @GetMapping("filter-as-admin")
-        @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     public List<PackageResponse> filter(
             @RequestParam(required = false) String pin,
             @RequestParam(required = false) Long branchId,
@@ -92,7 +92,7 @@ public class PackageController {
     }
 
     @GetMapping("filter-by")
-        @PreAuthorize("hasAnyRole('USER')")
+    @PreAuthorize("hasAnyRole('USER')")
 
     public List<PackageResponse> filterAsUser(
             @RequestParam(required = false) Long branchId,

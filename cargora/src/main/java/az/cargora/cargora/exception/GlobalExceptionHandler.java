@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 
 import az.cargora.cargora.exception.customExceptions.UserAlreadyExistsException;
 import az.cargora.cargora.exception.customExceptions.UserNotFoundException;
+import az.cargora.cargora.exception.customExceptions.WarehouseNotFoundException;
 
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -77,6 +78,19 @@ public ResponseEntity<ValidationErrorResponse> handleValidation(
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
+
+        @ExceptionHandler(WarehouseNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleWarehouseNotFound(WarehouseNotFoundException ex) {
+
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                "not found",
+                ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+
 
     // @ExceptionHandler(Exception.class)
     // public ResponseEntity<ErrorResponse> handleAll() {
