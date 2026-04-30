@@ -6,12 +6,14 @@ import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.dto.response.PackageResponse;
 import az.cargora.cargora.entity.PickUpPoint;
 import az.cargora.cargora.enums.PackageStatus;
+import az.cargora.cargora.repository.AccountRepository;
 import az.cargora.cargora.service.PackageService;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ import java.util.List;
 public class PackageController {
 
     private final PackageService packageService;
+    private final AccountRepository accountRepository;
 
     @PostMapping("/create-new")
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
@@ -52,11 +55,23 @@ public class PackageController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     @GetMapping("/of-user/{PIN}")
-    public ResponseEntity<Page<PackageResponse>> getAllPackages(
+    public ResponseEntity<Page<PackageResponse>> getUserPackages(
             @PathVariable String PIN,
             @PageableDefault(size = 10) Pageable pageable) {
         Page<PackageResponse> packages = packageService.getUserPackages(PIN, pageable);
         return ResponseEntity.ok(packages);
+    }
+
+    @PreAuthorize("hasAnyRole('USER')")
+    @GetMapping("/my-packages")
+    public ResponseEntity<Page<PackageResponse>> getMyPackages(@PageableDefault(size = 10) Pageable pageable) {
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String pin = accountRepository.findByUsername(username).get().getUser().getPIN();
+        Page<PackageResponse> packages = packageService.getUserPackages(pin, pageable);
+
+        return ResponseEntity.ok(packages);
+
     }
 
     @GetMapping("/status/{status}")
