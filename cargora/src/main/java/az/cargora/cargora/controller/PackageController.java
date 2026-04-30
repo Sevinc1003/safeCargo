@@ -4,6 +4,7 @@ import az.cargora.cargora.dto.request.UpdateDestinationBranch;
 import az.cargora.cargora.dto.request.UpdateWeightRequest;
 import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.dto.response.PackageResponse;
+import az.cargora.cargora.dto.response.PageResponse;
 import az.cargora.cargora.entity.PickUpPoint;
 import az.cargora.cargora.enums.PackageStatus;
 import az.cargora.cargora.repository.AccountRepository;
@@ -55,20 +56,20 @@ public class PackageController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     @GetMapping("/of-user/{PIN}")
-    public ResponseEntity<Page<PackageResponse>> getUserPackages(
+    public ResponseEntity<PageResponse<PackageResponse>> getUserPackages(
             @PathVariable String PIN,
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<PackageResponse> packages = packageService.getUserPackages(PIN, pageable);
+        PageResponse<PackageResponse> packages = packageService.getUserPackages(PIN, pageable);
         return ResponseEntity.ok(packages);
     }
 
     @PreAuthorize("hasAnyRole('USER')")
     @GetMapping("/my-packages")
-    public ResponseEntity<Page<PackageResponse>> getMyPackages(@PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<PageResponse<PackageResponse>> getMyPackages(@PageableDefault(size = 10) Pageable pageable) {
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         String pin = accountRepository.findByUsername(username).get().getUser().getPIN();
-        Page<PackageResponse> packages = packageService.getUserPackages(pin, pageable);
+        PageResponse<PackageResponse> packages = packageService.getUserPackages(pin, pageable);
 
         return ResponseEntity.ok(packages);
 

@@ -3,6 +3,7 @@ package az.cargora.cargora.service;
 
 import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.dto.response.PackageResponse;
+import az.cargora.cargora.dto.response.PageResponse;
 import az.cargora.cargora.entity.Package;
 import az.cargora.cargora.entity.Account;
 import az.cargora.cargora.entity.PackageHistory;
@@ -67,11 +68,22 @@ public class PackageService {
 
     }
 
-    @Transactional(readOnly = true)
-    public Page<PackageResponse> getUserPackages(String PIN, Pageable pageable) {
-        return packageRepository.findByUserPIN(PIN, pageable)
-                .map(this::mapOf);
-    }
+@Transactional(readOnly = true)
+public PageResponse<PackageResponse> getUserPackages(String PIN, Pageable pageable) {
+
+    Page<PackageResponse> page = packageRepository
+            .findByUserPIN(PIN, pageable)
+            .map(this::mapOf);
+
+    PageResponse<PackageResponse> response = new PageResponse<>();
+    response.setContent(page.getContent());
+    response.setPage(page.getNumber());
+    response.setSize(page.getSize());
+    response.setTotalElements(page.getTotalElements());
+    response.setTotalPages(page.getTotalPages());
+
+    return response;
+}
 
 
     @Transactional(readOnly = true)
