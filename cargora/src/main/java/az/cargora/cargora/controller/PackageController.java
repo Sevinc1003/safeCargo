@@ -4,6 +4,7 @@ import az.cargora.cargora.dto.request.UpdateDestinationBranch;
 import az.cargora.cargora.dto.request.UpdateWeightRequest;
 import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.dto.response.PackageResponse;
+import az.cargora.cargora.dto.response.PageResponse;
 import az.cargora.cargora.entity.PickUpPoint;
 import az.cargora.cargora.enums.PackageStatus;
 import az.cargora.cargora.repository.AccountRepository;
@@ -42,6 +43,7 @@ public class PackageController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     public ResponseEntity<PackageResponse> getPackage(@PathVariable Long id) {
         PackageResponse foundPackage = packageService.getPackageById(id);
         return ResponseEntity.ok(foundPackage);
@@ -55,32 +57,34 @@ public class PackageController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     @GetMapping("/of-user/{PIN}")
-    public ResponseEntity<Page<PackageResponse>> getUserPackages(
+    public ResponseEntity<PageResponse<PackageResponse>> getUserPackages(
             @PathVariable String PIN,
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<PackageResponse> packages = packageService.getUserPackages(PIN, pageable);
+        PageResponse<PackageResponse> packages = packageService.getUserPackages(PIN, pageable);
         return ResponseEntity.ok(packages);
     }
 
-    @PreAuthorize("hasAnyRole('USER')")
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/my-packages")
-    public ResponseEntity<Page<PackageResponse>> getMyPackages(@PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<PageResponse<PackageResponse>> getMyPackages(@PageableDefault(size = 10) Pageable pageable) {
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         String pin = accountRepository.findByUsername(username).get().getUser().getPIN();
-        Page<PackageResponse> packages = packageService.getUserPackages(pin, pageable);
+        PageResponse<PackageResponse> packages = packageService.getUserPackages(pin, pageable);
 
         return ResponseEntity.ok(packages);
 
     }
 
     @GetMapping("/status/{status}")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     public ResponseEntity<List<PackageResponse>> getPackagesByStatus(@PathVariable PackageStatus status) {
         List<PackageResponse> packages = packageService.getPackagesByStatus(status);
         return ResponseEntity.ok(packages);
     }
 
     @PatchMapping("update-weight")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     public ResponseEntity<String> updateWeight(@Valid @RequestBody UpdateWeightRequest request) {
         packageService.updateWeight(request.getPackageId(), request.getWeight());
         return ResponseEntity.ok("Weight updated successfully");
@@ -91,6 +95,7 @@ public class PackageController {
         packageService.updatePickUpPoints(request.getPackageId(), request.getDestinationBranchId());
         return ResponseEntity.ok("PickUpPoint updated successfully");
     }
+
 
     @GetMapping("filter-as-admin")
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")

@@ -22,6 +22,8 @@ public class UserController {
     private final AccountService accountService;
 
     @PutMapping("/home-address")
+        @PreAuthorize("hasRole('USER')")
+
     public ResponseEntity<Void> updateMyHomeAddress(
             @RequestBody @Valid String newAddress) {
 

@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import az.cargora.cargora.dto.response.PackageHistoryResponseDTO;
+import az.cargora.cargora.dto.response.PageResponse;
 import az.cargora.cargora.entity.PackageHistory;
 import az.cargora.cargora.entity.User;
 import az.cargora.cargora.enums.PackageStatus;
@@ -40,12 +42,17 @@ public class PackageHistoryService {
 
     }
 
-    public Page<PackageHistoryResponseDTO> getPackageHistory(Long packageId, Pageable   pageable) {
-        return repo.findByRelatedPackageId(packageId, pageable)
-                .map(history -> new PackageHistoryResponseDTO(
-                        history.getStatus(),
-                        history.getTimestamp()
-                ));
-    }
+@Transactional(readOnly = true)
+public PageResponse<PackageHistoryResponseDTO> getPackageHistory(Long packageId, Pageable pageable) {
+
+    Page<PackageHistoryResponseDTO> page = repo
+            .findByRelatedPackageId(packageId, pageable)
+            .map(history -> new PackageHistoryResponseDTO(
+                    history.getStatus(),
+                    history.getTimestamp()
+            ));
+
+    return PageResponse.from(page);
+}
 }
 
