@@ -19,7 +19,6 @@ public interface UserRepository extends JpaRepository<User, Long>{
 
     boolean existsByEmail(String email);
 
-   // sas
 
     // 1. Template to bring all users in a paginated list
     @Query("SELECT u FROM User u")

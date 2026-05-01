@@ -22,14 +22,12 @@ public class BalanceController {
     private final UserService userService;
 
     @PatchMapping("/top-up")
-    public ResponseEntity<User> topUpBalance(@RequestBody @Valid TopUpRequest request) {
+    public ResponseEntity<Void> topUpBalance(@RequestBody @Valid TopUpRequest request) {
 
         userService.topUpBalance(request);
 
-        // updated user-u geri qaytarmaq üçün
-        User user = userService.getUserById(request.getUserId());
 
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok().build();
     }
 
 }
