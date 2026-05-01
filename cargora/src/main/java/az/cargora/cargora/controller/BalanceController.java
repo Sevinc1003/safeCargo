@@ -1,6 +1,7 @@
 package az.cargora.cargora.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +23,7 @@ public class BalanceController {
     private final UserService userService;
 
     @PatchMapping("/top-up")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Void> topUpBalance(@RequestBody @Valid TopUpRequest request) {
 
         userService.topUpBalance(request);

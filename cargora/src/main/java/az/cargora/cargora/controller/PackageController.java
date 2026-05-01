@@ -43,6 +43,7 @@ public class PackageController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     public ResponseEntity<PackageResponse> getPackage(@PathVariable Long id) {
         PackageResponse foundPackage = packageService.getPackageById(id);
         return ResponseEntity.ok(foundPackage);
@@ -63,7 +64,7 @@ public class PackageController {
         return ResponseEntity.ok(packages);
     }
 
-    @PreAuthorize("hasAnyRole('USER')")
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/my-packages")
     public ResponseEntity<PageResponse<PackageResponse>> getMyPackages(@PageableDefault(size = 10) Pageable pageable) {
 
@@ -76,12 +77,14 @@ public class PackageController {
     }
 
     @GetMapping("/status/{status}")
+    @PreAuthorize("hasRole('EMPLOYEE')")
     public ResponseEntity<List<PackageResponse>> getPackagesByStatus(@PathVariable PackageStatus status) {
         List<PackageResponse> packages = packageService.getPackagesByStatus(status);
         return ResponseEntity.ok(packages);
     }
 
     @PatchMapping("update-weight")
+    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
     public ResponseEntity<String> updateWeight(@Valid @RequestBody UpdateWeightRequest request) {
         packageService.updateWeight(request.getPackageId(), request.getWeight());
         return ResponseEntity.ok("Weight updated successfully");
@@ -92,6 +95,7 @@ public class PackageController {
         packageService.updatePickUpPoints(request.getPackageId(), request.getDestinationBranchId());
         return ResponseEntity.ok("PickUpPoint updated successfully");
     }
+
 
     @GetMapping("filter-as-admin")
     @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
