@@ -16,7 +16,7 @@ public class TopUpRequest {
 
     private Long userId;
     
-    @NotBlank
+    @jakarta.validation.constraints.NotNull
     private BigDecimal amount;
 
     @NotBlank
