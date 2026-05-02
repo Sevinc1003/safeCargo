@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Pageable;
 
 @RestController
-@RequestMapping("/api/package-history")
+@RequestMapping("package-history")
 @RequiredArgsConstructor
 public class PackageHistoryController {
 
