@@ -3,9 +3,6 @@ package az.cargora.cargora.dto.response;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
-
-import az.cargora.cargora.entity.PackageHistory;
 import az.cargora.cargora.enums.PackageStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

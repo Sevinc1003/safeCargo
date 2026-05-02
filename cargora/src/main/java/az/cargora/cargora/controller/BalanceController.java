@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import az.cargora.cargora.dto.request.TopUpRequest;
-import az.cargora.cargora.entity.User;
 import az.cargora.cargora.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
