@@ -12,7 +12,6 @@ import az.cargora.cargora.exception.customExceptions.DisabledException;
 import az.cargora.cargora.exception.customExceptions.UserAlreadyExistsException;
 import az.cargora.cargora.exception.customExceptions.UserNotFoundException;
 import az.cargora.cargora.repository.AccountRepository;
-import az.cargora.cargora.repository.UserRepository;
 import az.cargora.cargora.security.JwtTokenProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

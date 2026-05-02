@@ -1,9 +1,5 @@
 package az.cargora.cargora.dto.request;
 
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-
-import az.cargora.cargora.entity.PickUpPoint;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
