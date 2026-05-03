@@ -4,6 +4,7 @@ import az.cargora.cargora.dto.request.UpdateDestinationBranch;
 import az.cargora.cargora.dto.request.UpdateWeightRequest;
 import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.dto.response.PackageResponse;
+import az.cargora.cargora.dto.response.PageResponse;
 import az.cargora.cargora.enums.PackageStatus;
 import az.cargora.cargora.repository.AccountRepository;
 import az.cargora.cargora.service.PackageService;
@@ -17,10 +18,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
@@ -33,7 +32,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PackageController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc(addFilters = false) // Bypasses security filters for pure controller testing
 public class PackageControllerTest {
 
     @Autowired
@@ -78,11 +77,21 @@ public class PackageControllerTest {
 
     @Test
     void getAllPackages_ofUser_returnsList() throws Exception {
+        // Arrange
         List<PackageResponse> packages = List.of(createPackageResponse("TRK222"));
-        Page<PackageResponse> pageResponse = new PageImpl<>(packages);
+        
+        // FIX: Create the custom PageResponse instead of Spring's PageImpl
+        PageResponse<PackageResponse> customPageResponse = new PageResponse<>();
+        customPageResponse.setContent(packages);
+        customPageResponse.setPage(0);
+        customPageResponse.setSize(10);
+        customPageResponse.setTotalElements(1L);
+        customPageResponse.setTotalPages(1);
 
-        Mockito.when(packageService.getUserPackages(eq("PIN123"), any(Pageable.class))).thenReturn(pageResponse);
+        Mockito.when(packageService.getUserPackages(eq("PIN123"), any(Pageable.class)))
+               .thenReturn(customPageResponse);
 
+        // Act & Assert
         mockMvc.perform(get("/packages/of-user/PIN123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.size()").value(1))
@@ -104,13 +113,8 @@ public class PackageControllerTest {
 
     @Test
     void updateWeight_returnsUpdatedPackage() throws Exception {
-        UpdateWeightRequest request = new UpdateWeightRequest();
-        // Assuming your DTO has setters or you might need to use a constructor instead
-        // request.setPackageId(4L);
-        // request.setWeight(BigDecimal.valueOf(5.5));
-
-        // Notice we use doNothing() because the service method now returns void
-        Mockito.doNothing().when(packageService).updateWeight(any(), any());
+        // Explicitly defining the mock arguments is safer
+        Mockito.doNothing().when(packageService).updateWeight(any(Long.class), any(BigDecimal.class));
 
         mockMvc.perform(patch("/packages/update-weight")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -121,8 +125,8 @@ public class PackageControllerTest {
 
     @Test
     void updateDestinationBranch_returnsUpdatedPackage() throws Exception {
-        // Notice we use doNothing() because the service method now returns void
-        Mockito.doNothing().when(packageService).updatePickUpPoints(any(), any());
+        // Explicitly defining the mock arguments
+        Mockito.doNothing().when(packageService).updatePickUpPoints(any(Long.class), any(Long.class));
 
         mockMvc.perform(patch("/packages/update-destinationBranch")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -139,6 +143,8 @@ public class PackageControllerTest {
         request.setDestinationBranchId(2L);
         request.setTrackingNumber("TRK999");
         request.setWeight(BigDecimal.valueOf(1.5));
+        
+        Mockito.doNothing().when(packageService).createPackage(any(newPackageRequest.class));
 
         mockMvc.perform(post("/packages/create-new")
                         .contentType(MediaType.APPLICATION_JSON)
