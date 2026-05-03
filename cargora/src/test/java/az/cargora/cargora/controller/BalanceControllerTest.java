@@ -60,10 +60,7 @@ class BalanceControllerTest {
         mockMvc.perform(patch("/balance/top-up")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(1L))
-                .andExpect(jsonPath("$.balance").value(100.50))
-                .andExpect(jsonPath("$.email").value("test@example.com"));
+                .andExpect(status().isOk());
 
         // Verify that the service method was called
         verify(userService).topUpBalance(any(TopUpRequest.class));

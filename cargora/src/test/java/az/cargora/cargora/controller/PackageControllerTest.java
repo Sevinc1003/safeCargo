@@ -5,6 +5,7 @@ import az.cargora.cargora.dto.request.UpdateWeightRequest;
 import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.dto.response.PackageResponse;
 import az.cargora.cargora.enums.PackageStatus;
+import az.cargora.cargora.repository.AccountRepository;
 import az.cargora.cargora.service.PackageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -40,6 +41,9 @@ public class PackageControllerTest {
 
     @MockitoBean
     private PackageService packageService;
+
+    @MockitoBean
+    private AccountRepository accountRepository;
 
     @MockitoBean
     private az.cargora.cargora.security.JwtTokenProvider jwtTokenProvider;
@@ -139,7 +143,7 @@ public class PackageControllerTest {
         mockMvc.perform(post("/packages/create-new")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Package created"));
+                .andExpect(status().isCreated())
+                .andExpect(content().string("New package successfully added"));
     }
 }
