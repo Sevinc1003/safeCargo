@@ -1,7 +1,4 @@
 package az.cargora.cargora.controller;
-
-import az.cargora.cargora.dto.request.UpdateDestinationBranch;
-import az.cargora.cargora.dto.request.UpdateWeightRequest;
 import az.cargora.cargora.dto.request.newPackageRequest;
 import az.cargora.cargora.dto.response.PackageResponse;
 import az.cargora.cargora.dto.response.PageResponse;
