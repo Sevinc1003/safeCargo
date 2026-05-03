@@ -1,6 +1,7 @@
 package az.cargora.cargora.service;
 
 import az.cargora.cargora.dto.response.PackageHistoryResponseDTO;
+import az.cargora.cargora.dto.response.PageResponse;
 import az.cargora.cargora.entity.Package;
 import az.cargora.cargora.entity.PackageHistory;
 import az.cargora.cargora.entity.User;
@@ -102,11 +103,13 @@ class PackageHistoryServiceTest {
         when(repo.findByRelatedPackageId(packageId, pageable)).thenReturn(mockPage);
 
         // 2. Act
-        Page<PackageHistoryResponseDTO> result = packageHistoryService.getPackageHistory(packageId, pageable);
+        // FIX: Update to expect your custom PageResponse wrapper instead of the Spring Page wrapper
+        PageResponse<PackageHistoryResponseDTO> result = packageHistoryService.getPackageHistory(packageId, pageable);
 
         // 3. Assert
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
+        // Note: Make sure your PageResponse wrapper has a getContent() or similar method to fetch the list!
         assertEquals(PackageStatus.DELIVERED, result.getContent().get(0).getStatus());
         
         verify(repo, times(1)).findByRelatedPackageId(packageId, pageable);
